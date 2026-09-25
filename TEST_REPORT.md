@@ -99,3 +99,38 @@ The fix in 19ac460 removed most of the lag. Every interaction on the sample now 
 - Strict xfails: B2 / B3 / B4 / B5 / B6. The opt-in browser test for B1 (`SIGNALREADY_BROWSER_TESTS=1`) also fails as expected: "2 tab bars on the page after saving".
 
 Run with `python -m pytest -q test_acceptance.py`. Do not export `SIGNALREADY_MODEL_DIR` for the full suite because test_regressions.py expects it unset (quality finding Q15).
+
+## Resolution
+
+Added September 25 2026 by the deliverables and compliance team after the fix round. The fixes landed in commit **85255c2** ("Fix testing-team bugs B1-B8 and top UX findings"). At that commit the suite has 253 tests. The 252 that run by default passed on Linux (252 passed / 1 skipped in 115 s, rerun independently by this team). The skipped test is the opt-in browser check for B1. The coordinator reports that it also passed with `SIGNALREADY_BROWSER_TESTS=1`. The five former strict xfail tests now pass as ordinary regression tests.
+
+### Bugs
+
+| ID | Status | Fix | Covering test |
+|---|---|---|---|
+| B1 | Fixed | Train / save / reload / clear run as button callbacks so no mid-script `st.rerun()` is needed. | test_acceptance.py::test_browser_save_right_after_training_shows_one_tab_bar (opt-in: `SIGNALREADY_BROWSER_TESTS=1`) |
+| B2 | Fixed | `data_issue_examples` is vectorized with NumPy. It runs only when a blocking error exists. | test_acceptance.py::test_issue_locator_is_fast_on_the_largest_allowed_file (50,000 rows in under 3 s) |
+| B3 | Fixed | `check_data` counts the normalized target as float so True/False labels count as 1/0. | test_acceptance.py::test_bool_labels_do_not_produce_contradictory_messages |
+| B4 | Fixed | The warning now reads "1 repeated example will be removed". | test_acceptance.py::test_single_repeated_example_warning_is_grammatical |
+| B5 | Fixed | A failed reload shows the specific reason from `load_run`. | test_acceptance.py::test_failed_reload_explains_the_reason |
+| B6 | Fixed | The "previously active model remains selected" sentence appears only when a run is active. | test_acceptance.py::test_failed_reload_without_active_model_does_not_mention_one |
+| B7 | Fixed | If the selected saved file disappears the sidebar says so instead of switching to another run. `run_label` tolerates a missing file. | test_integration_ui.py::test_deleted_saved_run_is_reported_instead_of_silently_switching |
+| B8 | Fixed | Completion-check results store the input fingerprint and are marked out of date when the selected file or active run changes. | test_integration_ui.py::test_completion_checks_are_marked_stale_after_the_file_changes |
+
+### UX input
+
+| Item | Status | Change |
+|---|---|---|
+| 1 Fix B1 before recording | Done | See B1. |
+| 2 Hide the Deploy button | Done | .streamlit/config.toml sets `[client]` `toolbarMode = "viewer"`. |
+| 3 Readable completion-check evidence | Done | Results render with `st.table` (Check / Result / Detail) so the Detail text wraps. |
+| 4 Calm Data readiness for the clean sample | Done | One blue information line names the flagged columns. The evidence moved to the "Why these columns look like answer giveaways" expander. |
+| 5 Open Model comparison after reload | Done | A successful reload switches to Model comparison with a restored message in the main area. |
+| 6 Warn before discarding an unsaved run | Not done | Open. |
+| 7 Readable saved-run labels | Not done | Open. |
+| 8 Keep the score from reading as a percentage | Not done | Open. The metric label and note still say "uncalibrated" and "not the chance". |
+| 9 Batch results polish | Not done | Open. The download column is now named "Model score (uncalibrated)" and formula-like ID text gets a leading apostrophe but the listed items remain. |
+| 10 Error messages that say what to do next | Not done | Open. |
+| 11 to 13 | Not done | Open. Lower priority. |
+
+Other changes in the same round: "Final check kept separate" also confirms the fitted data preparation saw only the training rows. "Known bad inputs receive clear warnings" requires both a blocking error and the repeated-example warning. "Both models use the same final examples" now says the counts are consistent with one shared final group. The plain-language summary says an uploaded file's origin has not been verified. Answer-giveaway evidence now says a column "may record the answer or be filled in after the outcome" and a tolerant text rule was added. Features are frozen after this commit.

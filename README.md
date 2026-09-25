@@ -28,7 +28,7 @@ How the Theme 1 items are covered today (the full table with gaps is in PROPOSAL
 
 | Theme 1 item | In the current app |
 |---|---|
-| Dataset profiling and quality assessment | Data readiness checks / correction table / outcome balance / column profile / answer-giveaway warnings |
+| Dataset profiling and quality assessment | Data readiness checks / correction table / outcome balance / column profile / answer-giveaway detection |
 | Task and model selection | Fixed rule: higher selection-group F1 picks between two models |
 | Preprocessing and feature engineering | Training-only scaling and fixed type encoding. No engineered features |
 | Model training and evaluation | Seeded 60/20/20 split with an always-no-failure baseline / plain-language results summary / six live completion checks |
@@ -67,14 +67,14 @@ Open http://127.0.0.1:8501 if the browser does not open by itself. If data/ai4i2
 ## Demo
 
 1. Select the included sample, or select Try a flawed sample to see a small built-in file with a missing reading and a repeated example.
-2. Review the data-readiness report. IDs and failure-type labels are excluded. The flawed sample shows how blocking errors and warnings appear before training is allowed. A correction table lists up to 20 problem cells by data row and column without repeating their values. The outcome balance line counts failure and no-failure examples after repeats are removed. On the included sample "Possible answer giveaway" warnings explain why the failure-type columns TWF / HDF / PWF / OSF must stay out of training. The Column profile expander summarizes every column.
+2. Review the data-readiness report. IDs and failure-type labels are excluded. The flawed sample shows how blocking errors and warnings appear before training is allowed. A correction table lists up to 20 problem cells by data row and column without repeating their values. The outcome balance line counts failure and no-failure examples after repeats are removed. On the included sample one information line names the failure-type columns HDF / OSF / PWF / TWF as possible answer giveaways that are already kept out of training. Open Why these columns look like answer giveaways for the evidence. The Column profile expander summarizes every column.
 3. Choose Check and compare models. The app opens Model comparison when the comparison is ready.
-4. On Model comparison inspect missed failures and false alarms. A PROTOTYPE label near the results is a reminder that this uses generated data rather than a live equipment connection. What these results mean explains the numbers in plain sentences. Open Completion checks and choose Run completion checks to retest six promises from the proposal on this run. The repeat check trains once more so it takes a few seconds.
+4. On Model comparison inspect missed failures and false alarms. A PROTOTYPE label near the results is a reminder that this uses generated data rather than a live equipment connection. What these results mean explains the numbers in plain sentences. Open Completion checks and choose Run completion checks to retest six promises from the proposal on this run. Each result appears in a readable table with its evidence. The repeat check trains once more so it takes a few seconds. The results are marked out of date if the selected file changes.
 5. Download the results report as JSON or as a plain-text readable report with the same fingerprint, model choice, split sizes, metrics and a limitations paragraph.
 6. Open What drove the model to inspect fitted model attributes learned from training examples. This shows model behavior and is not a physical cause of failure.
-7. Save the selected model locally. Restart the app and reload it from the sidebar. Once runs are saved the Compare saved runs expander on Model comparison lists them side by side.
+7. Save the selected model locally. Restart the app and reload it from the sidebar. The app opens Model comparison for the reloaded run. Once runs are saved the Compare saved runs expander on Model comparison lists them side by side.
 8. Open Try a prediction to enter readings with the displayed units. The same PROTOTYPE label appears next to the result. The Model score (uncalibrated) is the model's internal score. It is not the chance of failure. The what-if table shows how the score responds when each reading is replaced by its training average.
-9. Under Score a file of readings upload data/new_readings.csv (or any CSV with the six input columns, up to 5000 rows). Invalid rows are skipped and listed. Download the scored readings as a CSV.
+9. Under Score a file of readings upload data/new_readings.csv (or any CSV with the six input columns, up to 5000 rows). Invalid rows are skipped and listed. Download the scored readings as a CSV. Its score column is named Model score (uncalibrated).
 
 ## Modeling decisions
 
@@ -88,7 +88,7 @@ The What drove the model tab uses fitted training attributes without evaluating 
 
 The model score on Try a prediction is the fitted model's internal output for the failure class. It is uncalibrated and class balancing pushes it upward so the app never calls it a probability or a confidence. The what-if table changes one reading at a time to its training average. Inputs interact so the changes do not add up to the full score. Batch scoring applies the same checks as the single-reading form to every row.
 
-Answer-giveaway warnings come from a fixed rule applied only to columns that are already excluded. A numeric column is flagged when on its own it separates failure labels with a folded ROC AUC of at least 0.9 or when at least 95% of the rows where it is nonzero are failures. Text columns are flagged when their repeated values each occur with only one outcome. The warning explains the exclusion. It does not change the six approved inputs.
+Answer-giveaway notes come from a fixed rule applied only to columns that are already excluded. A numeric column is flagged when on its own it separates failure labels with a folded ROC AUC of at least 0.9 or when at least 95% of the rows where it is nonzero are failures. A text column is flagged when its repeated values each occur with only one outcome. It is also flagged when repeated values that are failures in at least 95% of their rows together fill at least 5 and no more than half of the labeled rows. The note says such a column may record the answer or be filled in after the outcome. It explains the exclusion and does not change the six approved inputs.
 
 CSV rows must match the header width. Numeric values are normalized before duplicate and conflicting-label checks. The encoder declares the fixed L/M/H schema without learning categories from held-out rows. Prediction rejects a product type absent from training examples rather than guessing its behavior.
 
@@ -100,7 +100,7 @@ Reloading checks the saved run's structure before using it. This detects incompl
 
 New saved runs record their training time in UTC plus a format version and software versions. The data source distinguishes included generated examples from unverified uploads. Older runs display unknown audit details. Unsupported formats or incompatible scikit-learn versions require a new training run. Each save creates a separate file so earlier runs are preserved.
 
-If a reload fails the app keeps the previous active model and displays its identity with a persistent error message. Clear active model removes it from the current session without deleting saved files. Readable reports include all final-check metrics plus selection scores and the explanation limitations.
+If a reload fails the app states the reason and keeps any previously active model with a persistent error message. If the selected saved file is deleted while the app is open the sidebar says so instead of switching to another run. Clear active model removes it from the current session without deleting saved files. Readable reports include all final-check metrics plus selection scores and the explanation limitations.
 
 ## Data credit
 

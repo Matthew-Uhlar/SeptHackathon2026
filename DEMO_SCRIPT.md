@@ -1,10 +1,10 @@
 # SignalReady demo video script
 
-Word-for-word narration for submission item 3 (demo video). Target length about 4 minutes 45 seconds. Hard limit 5 minutes. It follows DEMO_GUIDE.md and matches the app at commit 6d7058b.
+Word-for-word narration for submission item 3 (demo video). Target length about 4 minutes 45 seconds. Hard limit 5 minutes. It follows DEMO_GUIDE.md and matches the app at commit 85255c2.
 
 The timings assume a calm pace of about 150 words per minute. They have not been measured with a human reader yet. Do one timed read-through before recording and cut the lines marked *(trim if long)* first.
 
-A captioned screen recording without voice already exists at demo/SignalReady_demo.mp4 (made by demo/record_demo.py). This script is for a narrated version or a voiceover on top of that recording.
+A captioned screen recording without voice is kept at demo/SignalReady_demo.mp4 (4 minutes 29 seconds, made by demo/record_demo.py from the current app). This script is for a narrated version or a voiceover on top of that recording.
 
 ## Before you record
 
@@ -27,7 +27,7 @@ A captioned screen recording without voice already exists at demo/SignalReady_de
 
 ## Section 2. Bad data gets caught first (0:25 to 0:55)
 
-**Shot:** Sidebar Data source is **Try a flawed sample**. Tab **1 Data readiness** is open. Show the metrics row / the red errors / the yellow warnings. Then the **Where to correct the file** table. Hover over the grey **Check and compare models** button.
+**Shot:** Sidebar Data source is **Try a flawed sample**. Tab **1 Data readiness** is open. Show the metrics row / the red errors / the yellow warning "1 repeated example will be removed". Then the **Where to correct the file** table. Hover over the grey **Check and compare models** button.
 
 **Narration:**
 
@@ -41,23 +41,23 @@ A captioned screen recording without voice already exists at demo/SignalReady_de
 
 ## Section 3. Clean data and answer giveaways (0:55 to 1:45)
 
-**Shot:** Switch Data source to **Included sample**. Show the four yellow **Possible answer giveaway** warnings. Open the **Column profile** expander for three seconds and close it. Show the outcome balance line. Click **Check and compare models**. The app switches to Model comparison.
+**Shot:** Switch Data source to **Included sample**. Show the blue line "4 excluded columns may give away the answer: HDF, OSF, PWF, TWF. They are already kept out of training." Optionally open **Why these columns look like answer giveaways** for two seconds. Open the **Column profile** expander for three seconds and close it. Show the outcome balance line. Click **Check and compare models**. The app switches to Model comparison.
 
 **Narration:**
 
 > Now the real sample: ten thousand generated readings from the public UCI AI4I dataset.
 >
-> These warnings are the studio profiling the file. Four failure-type columns agree with the failure label almost perfectly. They record the answer rather than a reading taken beforehand. They are already kept out of training. Only six approved inputs can enter: product type plus five sensor readings.
+> This blue note is the studio profiling the file. Four failure-type columns agree with the failure label almost perfectly. They may record the answer or be filled in after the outcome. They are already kept out of training. Only six approved inputs can enter: product type plus five sensor readings.
 >
 > The column profile summarizes every column. Only [failures] examples are failures: about [share] percent.
 >
 > One click trains two models. Sixty percent of the data trains them. Twenty percent picks the winner. The last twenty percent is a final check that plays no part in the choice.
 
-**Notes:** Reference values: giveaway warnings for HDF / OSF / PWF / TWF (UDI / Product ID / RNF are not flagged). 339 failure examples (3.4%). Training takes a few seconds.
+**Notes:** Reference values: the note names HDF / OSF / PWF / TWF (UDI / Product ID / RNF are not flagged). The expander lists one "Possible answer giveaway:" bullet per column. 339 failure examples (3.4%). Training takes a few seconds.
 
 ## Section 4. What the models missed (1:45 to 2:40)
 
-**Shot:** Tab **2 Model comparison**. Show the Selected model heading / the three metrics / the table. Point at the **Always no failure** row. Scroll to **What these results mean**. Open **Completion checks** and click **Run completion checks**. Wait for the table (a repeat training run takes a few seconds).
+**Shot:** Tab **2 Model comparison**. Show the Selected model heading / the three metrics / the table. Point at the **Always no failure** row. Scroll to **What these results mean**. Open **Completion checks** and click **Run completion checks**. Wait for the table (a repeat training run takes a few seconds). The table shows Check / Result / Detail with the evidence wrapped so it can be read on screen. Pause on it.
 
 **Narration:**
 
@@ -85,7 +85,7 @@ A captioned screen recording without voice already exists at demo/SignalReady_de
 
 ## Section 6. Save / reload / one prediction (2:55 to 3:55)
 
-**Shot:** Back to **2 Model comparison**. Click **Save selected model locally**. Show the green Saved message and the **Saved local runs** picker in the sidebar. Refresh the browser page. Click **Reload saved model** in the sidebar. Open **3 Try a prediction**. Set Rotational speed to 1300 and Torque to 65. Click **Check these readings**. Show the flag / the **Model score (uncalibrated)** / the band sentence / the grey note. Scroll to **How the score responds to each reading**. Then set Air temperature to 310 and check again.
+**Shot:** Back to **2 Model comparison**. Click **Save selected model locally**. Show the green Saved message and the **Saved local runs** picker in the sidebar. Refresh the browser page. Click **Reload saved model** in the sidebar. The app opens Model comparison with a green restored message. Open **3 Try a prediction**. Set Rotational speed to 1300 and Torque to 65. Click **Check these readings**. Show the flag / the **Model score (uncalibrated)** / the band sentence / the grey note. Scroll to **How the score responds to each reading**. Then set Air temperature to 310 and check again.
 
 **Narration:**
 

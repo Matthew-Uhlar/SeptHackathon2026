@@ -2,18 +2,18 @@
 
 Deadline: **Sunday September 27 2026 at 4:59 PM Central (America/Chicago)** which is 21:59 UTC. The portal header says Sep 27 while the timeline graphic says Sep 28. Plan for Sep 27. Submissions can be updated until the deadline. Late or incomplete submissions are not considered.
 
-Status key: **Done** = in the repository and checked / **Needs owner** = only Matt can do it. The feature modules were wired into app.py in commit 6d7058b.
+Status key: **Done** = in the repository and checked / **Needs owner** = only Matt can do it. The feature modules were wired into app.py in commit 6d7058b. The testing team's bugs B1 to B8 were fixed in 85255c2. Features are now frozen.
 
-Checked on September 25 2026 against the official Submission Format in PROPOSAL_CRITERIA.md and the app at commit 6d7058b.
+Checked on September 25 2026 against the official Submission Format in PROPOSAL_CRITERIA.md and the app at commit 85255c2.
 
 ## Required submission items
 
 | # | Item | Where it lives | Status | What still has to happen |
 |---|---|---|---|---|
 | 1 | Project summary (overview / problem / impact) | PROJECT_SUMMARY.md | Done | Matt reads it once and pastes it into the portal if the portal has a text field. |
-| 2 | Working prototype or proof of concept | app.py / core.py / profiling.py / narrative.py / completion_checks.py / inference.py / data / Start SignalReady.bat | Done. 192 tests passed on Linux at commit 6d7058b | Matt runs the tests on Windows and walks the demo once (final verification list below). Rerun the suite after any later code change. |
-| 3 | Demo video | demo/SignalReady_demo.mp4 (captioned screen recording without voice, made by demo/record_demo.py). Script for a voiced version: DEMO_SCRIPT.md. Outline: DEMO_GUIDE.md | Recording exists. Needs owner | The recording was being re-recorded to include the integrated features when this list was updated. Watch the final file end to end and confirm it shows the current app. Then choose: submit it as it is / add a voiceover from DEMO_SCRIPT.md / record a new narrated take. Keep it under 5 minutes. Upload it where the portal asks (file or link). If a link: set it to unlisted or public and test it in a private browser window. |
-| 4 | Source code (link to a repository) | https://github.com/Matthew-Uhlar/SeptHackathon2026 | Needs owner | The repository was still **private** at the last check on September 25 2026. `master` (the default branch) has been fast-forwarded to the working branch before, but it must be fast-forwarded again after the final commit: at the last check `origin/master` was at 75e2a44 while the branch was at 0b5d9c3. Matt must make the repository public or give the judges access in the way the portal asks. Then open the link while logged out and confirm the latest commit shows on `master`. |
+| 2 | Working prototype or proof of concept | app.py / core.py / profiling.py / narrative.py / completion_checks.py / inference.py / data / Start SignalReady.bat | Done. 253 tests at commit 85255c2: the 252 that run by default passed on Linux and the opt-in browser test (SIGNALREADY_BROWSER_TESTS=1) also passed | Matt runs the tests on Windows and walks the demo once (final verification list below). Rerun the suite after any later code change. |
+| 3 | Demo video | demo/SignalReady_demo.mp4 (captioned screen recording without voice, made by demo/record_demo.py). Script for a voiced version: DEMO_SCRIPT.md. Outline: DEMO_GUIDE.md | Recording exists. Needs owner | The coordinator was re-recording it for the app at 85255c2 when this list was updated. Watch the final file end to end and confirm it shows the current app. Then choose: submit it as it is / add a voiceover from DEMO_SCRIPT.md / record a new narrated take. Keep it under 5 minutes. Upload it where the portal asks (file or link). If a link: set it to unlisted or public and test it in a private browser window. |
+| 4 | Source code (link to a repository) | https://github.com/Matthew-Uhlar/SeptHackathon2026 | Needs owner | The repository was still **private** at the last check on September 25 2026. `master` (the default branch) has been fast-forwarded to the working branch before, but it must be fast-forwarded again after the final commit: at the last check `origin/master` was at 0ca9588 while the branch was at 85255c2. Matt must make the repository public or give the judges access in the way the portal asks. Then open the link while logged out and confirm the latest commit shows on `master`. |
 | 5 | Technical documentation (architecture / technologies / approach / setup) | TECHNICAL_DOCUMENTATION.md | Done | Update the test count if the suite changes. |
 | 6 | Presentation deck (optional) | Idea-phase deck (signalready_submission.pptx) held by Matt | Needs owner (optional) | Decide whether to upload. If uploaded, it should not promise more than the app does. COMPLIANCE_REVIEW.md has the proposal-versus-build table. |
 
@@ -56,11 +56,13 @@ Do these in order after the last code change. Use a new folder so nothing from t
    - The table shows both models plus Always no failure.
    - Readable and JSON reports download.
    - What drove the model shows the chart with its caption.
-   - Save / refresh / reload from the sidebar works.
-   - Included sample shows four Possible answer giveaway warnings (TWF / HDF / PWF / OSF) and the Column profile expander.
-   - Model comparison shows What these results mean. Run completion checks shows six rows that all read Passed.
+   - Save / refresh / reload from the sidebar works. Reload opens Model comparison. Only one tab bar is ever visible (bug B1).
+   - Flawed sample warning reads "1 repeated example will be removed".
+   - Included sample shows one blue line "4 excluded columns may give away the answer: HDF, OSF, PWF, TWF" / the Why these columns look like answer giveaways expander with four bullets / the Column profile expander.
+   - Model comparison shows What these results mean. Run completion checks shows a readable table with six rows that all read Passed. Switching to the flawed sample marks those results out of date.
    - After a save the Compare saved runs expander lists the run.
    - Try a prediction: 1300 rpm with 65 Nm is flagged and shows a Model score (uncalibrated) with its note and the what-if table. Air temperature 310 shows the outside-range warning.
-   - Score a file of readings with data/new_readings.csv shows 29 scored / 4 flagged / 3 outside range / 2 skipped rows. Download scored readings works.
+   - Score a file of readings with data/new_readings.csv shows 29 scored / 4 flagged / 3 outside range / 2 skipped rows. Download scored readings works and its score column is named Model score (uncalibrated).
+   - The Streamlit toolbar shows no Deploy button.
 7. **Reread the docs.** No document describes a feature that the app does not show.
 8. **Stop the app** and delete the check folder.

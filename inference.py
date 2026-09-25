@@ -21,7 +21,7 @@ SCORE_NOTE = ('The model score is an uncalibrated internal score from 0 to 1. Sc
               'that this equipment will fail.')
 
 WHAT_IF_NOTE = ('Each row shows how the model score responds when one reading is replaced by its training average '
-                'while the other readings stay the same. This describes model behavior. It is not a physical cause '
+                'or the product type by another type while everything else stays the same. This describes model behavior. It is not a physical cause '
                 'or a repair recommendation. Inputs interact so these changes do not add up to the full score.')
 
 
