@@ -28,7 +28,7 @@ sys.path.insert(0, str(ROOT))
 from core import read_csv, train, class_balance  # noqa: E402
 
 WIDTH, HEIGHT = 1280, 720
-READ_RATE = 2.6  # words per second a viewer can comfortably read
+READ_RATE = 3.0  # words per second; tuned so the walkthrough stays near five minutes
 TABS = ['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model']
 
 OVERLAY_JS = """
@@ -78,7 +78,12 @@ def facts():
     winner = run['winner']
     other = next(n for n in run['test'] if n not in (winner, 'Always no failure'))
     base = run['test']['Always no failure']
+    from inference import model_score, score_batch, batch_summary
+    stressed = {'Type': 'L', 'Air temperature [K]': 300., 'Process temperature [K]': 310., 'Rotational speed [rpm]': 1500.,
+                'Torque [Nm]': 65., 'Tool wear [min]': 210.}
+    batch, problems = score_batch(run, read_csv((ROOT / 'data/new_readings.csv').read_bytes()))
     return {
+        'stressed_score': model_score(run, stressed)['score'], 'batch': batch_summary(batch), 'skipped': len(problems),
         'winner': winner, 'other': other,
         'w': run['test'][winner], 'o': run['test'][other],
         'base_correct': base['Correct no-failure readings'],
@@ -96,7 +101,7 @@ class Demo:
 
     def say(self, text, hold=0.0):
         self.overlay('caption', text)
-        time.sleep(max(3.2, len(text.split()) / READ_RATE) + hold)
+        time.sleep(max(3.0, len(text.split()) / READ_RATE) + hold)
 
     def card(self, html, seconds):
         self.overlay('card', html)
@@ -175,7 +180,7 @@ def record(out, chromium):
             d.card('<div style="font-size:18px;letter-spacing:.2em;opacity:.75">ABB ACCELERATOR 2026 · THEME 1</div>'
                    '<div style="font-size:64px;font-weight:700;margin:18px 0">SignalReady</div>'
                    '<div style="font-size:26px;opacity:.9">A guided studio that shows what a failure model misses before anyone trusts it</div>'
-                   '<div style="font-size:18px;opacity:.7;margin-top:36px">Solo prototype by Matt Uhlar · captioned walkthrough</div>', 5)
+                   '<div style="font-size:18px;opacity:.7;margin-top:36px">Solo prototype by Matt Uhlar · captioned walkthrough</div>', 4)
 
             # 1. Problem
             d.say('A failure model can score well and still be useless.')
@@ -186,8 +191,7 @@ def record(out, chromium):
             d.click(radio.get_by_text('Try a flawed sample'))
             d.say('Every run starts with a data check. This built-in sample has two planted problems.')
             d.scroll_to(page.get_by_text('Some required readings or failure labels are empty'))
-            d.say('Red messages block training. A required reading is empty.')
-            d.say('The yellow warning says one example is repeated. Repeats are removed so one reading cannot land in both training and testing.')
+            d.say('Red messages block training: a required reading is empty. The yellow warning says one example is repeated and will be removed.')
             guide = page.locator('[data-testid="stExpander"]', has_text='Where to correct the file')
             d.highlight(guide, 0.4)
             d.say('This table points to the exact place to fix: data row 10 / air temperature / missing value. It never repeats the value itself.', 0.5)
@@ -200,8 +204,11 @@ def record(out, chromium):
             d.say(f'Now the real sample: 10,000 generated equipment readings from the public UCI AI4I 2020 dataset.')
             d.scroll_to(page.get_by_text('Outcome balance'))
             d.say(f'Only {f["failures"]} are failures ({f["share"]:.1%}). That is why this app never leads with accuracy.')
-            d.say('ID columns and failure-type columns are excluded. Only six approved inputs can enter training: product type plus five sensor readings.')
-            d.say('One click trains two models. 60% of examples train them. A separate 20% picks the winner. The last 20% is a final check that plays no part in the choice.')
+            d.scroll_to(page.get_by_text('Possible answer giveaway').first)
+            d.say('The studio also spots columns that give away the answer. These failure-type columns are only known after a failure.', 0.5)
+            d.say('They are already excluded. Only six approved inputs can enter training: product type plus five sensor readings.')
+            d.say('One click trains two models. 60% of examples train them. 20% picks the winner. The last 20% is a final check that plays no part in the choice.')
+            d.scroll_to(page.get_by_role('button', name='Check and compare models'))
             d.click(page.get_by_role('button', name='Check and compare models'))
             page.get_by_text('Selected model:').wait_for(timeout=120000)
             d.settle(1.5)
@@ -214,26 +221,28 @@ def record(out, chromium):
             d.highlight(table, 0.3)
             d.say(f'The always-no-failure row gets {f["base_correct"]:,} of {f["total"]:,} readings right yet catches zero failures. That is the trap this table exposes.', 0.5)
             d.say(f'The other model stays in view. {f["other"]} found {o["Failures found"]} failures but raised {o["False alarms"]} false alarms.')
-            checked = page.get_by_text('How this run was checked')
-            d.click(checked)
-            d.say('Every run records its data fingerprint / random seed / split sizes / training time / software versions.')
-            d.click(checked, 0.3)
+            d.scroll_to(page.get_by_text('What these results mean'))
+            d.say('Prepared plain-language sentences explain the checked results so no one has to decode the table alone.', 1.0)
+            d.click(page.get_by_text('Completion checks', exact=True))
+            d.click(page.get_by_role('button', name='Run completion checks'))
+            page.locator('[data-testid="stExpander"]', has_text='Run completion checks').locator('[data-testid="stDataFrame"]').wait_for(timeout=60000)
+            d.settle(1.0)
+            d.scroll_to(page.locator('[data-testid="stExpander"]', has_text='Run completion checks').locator('[data-testid="stDataFrame"]'))
+            d.say('Live completion checks prove the proposal promises for this run: no answer columns / same final examples / a repeat run matches / reloading preserves predictions.', 1.0)
             d.highlight(page.get_by_role('button', name='Download results report (readable)'), 0.3)
-            d.say('The same details go into downloadable reports so anyone can check the result later.')
+            d.say('Every run records its fingerprint / seed / split sizes / software versions. Reports carry the same details.')
 
             # 5. Explanation
             d.tab(TABS[3])
-            d.say('This tab shows which inputs the fitted model leaned on most.', 0.5)
             d.scroll_to(page.get_by_text('Bars show', exact=False).filter(visible=True).first)
-            d.say('The caption states what this is not: a physical cause of failure or an explanation of one prediction.')
+            d.say('This tab shows which inputs the fitted model leaned on most. The caption says it is not a physical cause of failure.', 0.5)
 
             # 6. Save / reload / predict
             d.tab(TABS[1])
             d.click(page.get_by_role('button', name='Save selected model locally'))
             page.get_by_text('Saved. This run is now available').wait_for(timeout=30000)
             d.highlight(page.get_by_text('Saved local runs'), 0.3)
-            d.say('One click saves the selected model on this computer with its audit details. It appears in the sidebar at once.')
-            d.say('Refreshing the page simulates a restart.')
+            d.say('One click saves the model locally with its audit details. Refreshing the page simulates a restart.')
             page.reload()
             page.get_by_text('Is the data ready?').wait_for(timeout=60000)
             d.prepare_page()
@@ -242,26 +251,37 @@ def record(out, chromium):
             d.tab(TABS[2])
             submit = page.get_by_role('button', name='Check these readings')
             d.click(submit)
-            d.say('With the default readings the model does not flag a failure pattern.')
-            page.get_by_label('Rotational speed [rpm]').fill('1300')
+            d.say('With typical readings the model does not flag a failure pattern.')
             page.get_by_label('Torque [Nm]').fill('65')
-            d.say('Lower the speed and raise the torque...')
+            page.get_by_label('Tool wear [min]').fill('210')
+            d.say('Now high torque on a worn tool.')
             d.click(submit)
-            d.say('...and the model flags a failure pattern.')
+            d.scroll_to(page.get_by_text('Model score (uncalibrated)'))
+            d.say(f'The model flags a failure pattern. Its score is {f["stressed_score"]:.2f}. It is labeled uncalibrated because it is not the chance of failure.', 0.5)
+            d.scroll_to(page.get_by_text('How the score responds to each reading'))
+            d.say('The what-if table shows which readings pushed this result: torque first then tool wear. It describes the model rather than a physical cause.', 1.0)
             page.get_by_label('Air temperature [K]').fill('310')
             d.say('Now an air temperature outside anything seen in training.')
             d.click(submit)
             d.scroll_to(page.get_by_text('Outside the training range'))
             d.say('The app warns that the model may be unreliable here. It tells you when it is guessing.', 0.5)
+            d.scroll_to(page.get_by_text('Score a file of readings'))
+            page.locator('[data-testid="stFileUploaderDropzoneInput"]').last.set_input_files(str(ROOT / 'data/new_readings.csv'))
+            page.get_by_text('Rows scored').wait_for(timeout=60000)
+            d.settle(1.0)
+            d.scroll_to(page.get_by_text('Rows scored'))
+            b = f['batch']
+            d.say(f'A whole file of new readings can be scored at once: {b["Rows scored"]} scored / {b["Flagged"]} flagged / {b["Outside training range"]} outside the training range.', 0.5)
+            d.say(f'{f["skipped"]} invalid rows are skipped with a plain reason. The results download as a CSV.', 0.5)
 
             # 7. Close
             d.tab(TABS[1])
-            d.say('Scope: one computer / generated data / no machine connection. No breakdown-time forecast or calibrated probability.')
+            d.say('Scope: one computer / generated data / no machine connection / no breakdown-time forecast. The engineer makes every decision.')
             d.say('Next step: a trial on real plant data with time-aware testing then a scoring service for plant systems.')
             d.card('<div style="font-size:52px;font-weight:700">SignalReady</div>'
                    '<div style="font-size:26px;margin:22px 0;opacity:.9">See what a model misses before you trust it.</div>'
                    '<div style="font-size:18px;opacity:.75">Python · scikit-learn · pandas · Streamlit · Apache 2.0</div>'
-                   '<div style="font-size:16px;opacity:.65;margin-top:26px">Data: AI4I 2020 Predictive Maintenance Dataset by S. Matzka · UCI Machine Learning Repository · CC BY 4.0</div>', 6)
+                   '<div style="font-size:16px;opacity:.65;margin-top:26px">Data: AI4I 2020 Predictive Maintenance Dataset by S. Matzka · UCI Machine Learning Repository · CC BY 4.0</div>', 5)
 
             video = page.video
             context.close()

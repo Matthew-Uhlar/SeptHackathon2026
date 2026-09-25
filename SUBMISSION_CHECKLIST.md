@@ -2,19 +2,19 @@
 
 Deadline: **Sunday September 27 2026 at 4:59 PM Central (America/Chicago)** which is 21:59 UTC. The portal header says Sep 27 while the timeline graphic says Sep 28. Plan for Sep 27. Submissions can be updated until the deadline. Late or incomplete submissions are not considered.
 
-Status key: **Done** = in the repository and checked / **Needs integration** = waiting on the coordinator to wire new modules into app.py / **Needs owner** = only Matt can do it.
+Status key: **Done** = in the repository and checked / **Needs owner** = only Matt can do it. The feature modules were wired into app.py in commit 6d7058b.
 
-Checked on September 25 2026 against the official Submission Format in PROPOSAL_CRITERIA.md.
+Checked on September 25 2026 against the official Submission Format in PROPOSAL_CRITERIA.md and the app at commit 6d7058b.
 
 ## Required submission items
 
 | # | Item | Where it lives | Status | What still has to happen |
 |---|---|---|---|---|
-| 1 | Project summary (overview / problem / impact) | PROJECT_SUMMARY.md | Done. Needs integration for new features | Coordinator adds any newly wired features to the Solution list. Matt reads it once and pastes it into the portal if the portal has a text field. |
-| 2 | Working prototype or proof of concept | app.py / core.py / data / Start SignalReady.bat | Done for the current feature set. 111 tests passed on Linux on September 25 2026 (code as of commit 09ba38c) | Coordinator finishes integration and reruns the full suite. Matt runs the tests on Windows and walks the demo once (final verification list below). |
-| 3 | Demo video | Script: DEMO_SCRIPT.md. Outline: DEMO_GUIDE.md | Needs owner | Matt records a 4 to 5 minute video after integration is frozen. Uploads it where the portal asks (file or link). If a link: set it to unlisted or public and test it in a private browser window. |
-| 4 | Source code (link to a repository) | https://github.com/Matthew-Uhlar/SeptHackathon2026 | Needs owner | The repository was **private** on September 25 2026 and the work sits on branch `claude/jolly-fermi-9zawua` while `master` is the default branch. Matt must merge the final work into `master` (or name the branch in the submission) and either make the repository public or give the judges access in the way the portal asks. Then open the link while logged out to confirm it works. |
-| 5 | Technical documentation (architecture / technologies / approach / setup) | TECHNICAL_DOCUMENTATION.md | Done. Needs integration for new modules | Coordinator updates the diagram and module map if new modules are wired in. |
+| 1 | Project summary (overview / problem / impact) | PROJECT_SUMMARY.md | Done | Matt reads it once and pastes it into the portal if the portal has a text field. |
+| 2 | Working prototype or proof of concept | app.py / core.py / profiling.py / narrative.py / completion_checks.py / inference.py / data / Start SignalReady.bat | Done. 192 tests passed on Linux at commit 6d7058b | Matt runs the tests on Windows and walks the demo once (final verification list below). Rerun the suite after any later code change. |
+| 3 | Demo video | demo/SignalReady_demo.mp4 (captioned screen recording without voice, made by demo/record_demo.py). Script for a voiced version: DEMO_SCRIPT.md. Outline: DEMO_GUIDE.md | Recording exists. Needs owner | The recording was being re-recorded to include the integrated features when this list was updated. Watch the final file end to end and confirm it shows the current app. Then choose: submit it as it is / add a voiceover from DEMO_SCRIPT.md / record a new narrated take. Keep it under 5 minutes. Upload it where the portal asks (file or link). If a link: set it to unlisted or public and test it in a private browser window. |
+| 4 | Source code (link to a repository) | https://github.com/Matthew-Uhlar/SeptHackathon2026 | Needs owner | The repository was still **private** at the last check on September 25 2026. `master` (the default branch) has been fast-forwarded to the working branch before, but it must be fast-forwarded again after the final commit: at the last check `origin/master` was at 75e2a44 while the branch was at 0b5d9c3. Matt must make the repository public or give the judges access in the way the portal asks. Then open the link while logged out and confirm the latest commit shows on `master`. |
+| 5 | Technical documentation (architecture / technologies / approach / setup) | TECHNICAL_DOCUMENTATION.md | Done | Update the test count if the suite changes. |
 | 6 | Presentation deck (optional) | Idea-phase deck (signalready_submission.pptx) held by Matt | Needs owner (optional) | Decide whether to upload. If uploaded, it should not promise more than the app does. COMPLIANCE_REVIEW.md has the proposal-versus-build table. |
 
 ## Supporting items
@@ -25,8 +25,8 @@ Checked on September 25 2026 against the official Submission Format in PROPOSAL_
 | Dataset attribution (CC BY 4.0) | THIRD_PARTY_NOTICES.md / README.md / NOTICE / app sidebar | Done | The sidebar credit names the creator. |
 | Rules and theme check | COMPLIANCE_REVIEW.md | Done | Matt reviews the owner-only items. |
 | Code license | LICENSE (Apache 2.0) and NOTICE | Done | Check the event's IP terms on the portal. If they require something different change the license before submitting. |
-| Results summary | RESULTS_SUMMARY.md (generated by make_results_summary.py) | Needs integration | The planned generator did not exist in the repository when this list was written. If it lands, generate the file from a fresh run just before recording and link it from README.md. |
-<!-- COORDINATOR: update the Results summary row after integration. -->
+| Results summary | RESULTS_SUMMARY.md (generated by make_results_summary.py) | Done | Linked from README.md. Random forest selected / 52 found / 16 missed / 40 false alarms on 2,000 final-check readings / all six completion checks passed. Regenerate with `python make_results_summary.py` after any code or dependency change so it matches the app. |
+| Batch scoring demo file | data/new_readings.csv (31 readings written for this project) | Done | With the sample-trained model: 29 scored / 4 flagged / 3 outside the training range / 2 skipped. |
 
 ## Owner-only actions before the deadline
 
@@ -34,8 +34,8 @@ Checked on September 25 2026 against the official Submission Format in PROPOSAL_
 2. **Eligibility.** Confirm current enrollment at an accredited US college or university. Keep proof of enrollment handy in case ABB asks.
 3. **Individual participation.** The rules say team size is 1 to 5 and that individual participation is governed by ABB's final eligibility criteria. Check the portal or ask the organizers whether a solo entry is accepted.
 4. **Deadline.** Treat Sep 27 4:59 PM Central as final. Aim to upload by the morning of Sep 27 so there is time to fix a broken link.
-5. **Repository access.** Merge / make accessible / test the link logged out (item 4 above).
-6. **Video.** Record / export / upload / test the link (item 3 above).
+5. **Repository access.** Fast-forward `master` to the final commit / make the repository accessible / test the link logged out (item 4 above).
+6. **Video.** Review the captioned recording or record a voiced version / upload / test the link (item 3 above).
 7. **AI-assistance disclosure.** The captured rules do not mention AI coding tools. The commit history names Claude as an author on several commits. Decide whether to add a short disclosure. Suggested wording is in COMPLIANCE_REVIEW.md.
 8. **License.** Apache 2.0 has been added (LICENSE and NOTICE). Confirm the event's IP terms do not conflict.
 9. **Portal upload.** Fill in each portal field. Paste the repository URL and video link. Attach the deck if wanted. Submit. Save the confirmation screen or email.
@@ -43,10 +43,10 @@ Checked on September 25 2026 against the official Submission Format in PROPOSAL_
 
 ## Final pre-submission verification
 
-Do these in order once the coordinator says integration is finished. Use a new folder so nothing from the development environment helps.
+Do these in order after the last code change. Use a new folder so nothing from the development environment helps.
 
-1. **Fresh clone.** `git clone https://github.com/Matthew-Uhlar/SeptHackathon2026 signalready-check` then `cd signalready-check`. Check out the branch you will submit.
-2. **Confirm files.** data/ai4i2020.csv and data/bad_sample.csv exist. Every document linked from README.md opens. No models folder / .venv / personal files are committed (`git ls-files`).
+1. **Fresh clone.** `git clone https://github.com/Matthew-Uhlar/SeptHackathon2026 signalready-check` then `cd signalready-check`. Stay on `master` (the default branch judges will see) and confirm `git log -1` shows the final commit.
+2. **Confirm files.** data/ai4i2020.csv / data/bad_sample.csv / data/new_readings.csv / LICENSE / NOTICE / RESULTS_SUMMARY.md / demo/SignalReady_demo.mp4 exist. Every document linked from README.md opens. No models folder / .venv / personal files are committed (`git ls-files`).
 3. **Install.** Windows: `python -m venv .venv` then `.venv\Scripts\python -m pip install -r requirements.txt`. Then `.venv\Scripts\python -m pip check` should report no broken requirements.
 4. **Run tests.** `.venv\Scripts\python -m pytest -q`. Every test must pass. Write the count and time in CODEX_HANDOFF_CURRENT.md or the portal notes if useful.
 5. **Launch.** Double-click Start SignalReady.bat. The app opens at http://127.0.0.1:8501.
@@ -57,7 +57,10 @@ Do these in order once the coordinator says integration is finished. Use a new f
    - Readable and JSON reports download.
    - What drove the model shows the chart with its caption.
    - Save / refresh / reload from the sidebar works.
-   - Try a prediction works with defaults and shows the outside-range warning for air temperature 310.
-   - Any integrated features (column profile / results summary / completion checks / model score / what-if / batch scoring) appear and work.
+   - Included sample shows four Possible answer giveaway warnings (TWF / HDF / PWF / OSF) and the Column profile expander.
+   - Model comparison shows What these results mean. Run completion checks shows six rows that all read Passed.
+   - After a save the Compare saved runs expander lists the run.
+   - Try a prediction: 1300 rpm with 65 Nm is flagged and shows a Model score (uncalibrated) with its note and the what-if table. Air temperature 310 shows the outside-range warning.
+   - Score a file of readings with data/new_readings.csv shows 29 scored / 4 flagged / 3 outside range / 2 skipped rows. Download scored readings works.
 7. **Reread the docs.** No document describes a feature that the app does not show.
 8. **Stop the app** and delete the check folder.

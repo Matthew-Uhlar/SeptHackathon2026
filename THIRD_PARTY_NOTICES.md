@@ -25,7 +25,7 @@ Suggested citation: Matzka S. (2020). AI4I 2020 Predictive Maintenance Dataset [
 
 The dataset is provided by its creator as-is under CC BY 4.0. Its creator and UCI do not endorse SignalReady. The readings are synthetic and were generated to reflect real predictive maintenance data. The CC BY 4.0 license of this file is not changed by the Apache 2.0 license of the SignalReady source code (see LICENSE and NOTICE).
 
-data/bad_sample.csv is not a copy of UCI rows. It uses the same column names so the checks can be demonstrated. Its 56 readings were written for this project. None of its reading combinations match a row in data/ai4i2020.csv.
+data/bad_sample.csv and data/new_readings.csv are not copies of UCI rows. They use the same column names so the checks and batch scoring can be demonstrated. Their 56 and 31 readings were written for this project. None of their reading combinations match a row in data/ai4i2020.csv. NOTICE places both files under the project's Apache 2.0 license.
 
 ## Direct dependencies
 
@@ -97,7 +97,15 @@ The package-level licenses are permissive except certifi (MPL-2.0). MPL-2.0 appl
 
 ## Tools used during development but not required to run SignalReady
 
-Playwright (Apache-2.0) was used in a separate environment to drive a headless browser for manual interface checks. It is not in requirements.txt and is not needed to install / run / test the app.
+These are not in requirements.txt and are not needed to install / run / test the app.
+
+| Tool | Version checked | License | Use |
+|---|---|---|---|
+| Playwright for Python | 1.63.0 | Apache-2.0 | Drives a headless browser for interface checks and for demo/record_demo.py. |
+| imageio-ffmpeg | 0.6.0 | BSD-2-Clause | Supplies an FFmpeg executable that demo/record_demo.py uses to encode the MP4. |
+| FFmpeg (binary shipped inside imageio-ffmpeg) | 7.0.2 static build | GPL-3.0 (built with --enable-gpl --enable-version3) | Video encoding with libx264. |
+
+FFmpeg is run as a separate program and is neither copied into this repository nor linked into SignalReady. The GPL therefore does not extend to SignalReady's code. The encoded video demo/SignalReady_demo.mp4 is output of the program and shows only SignalReady's own screens and text.
 
 ## License compatibility summary
 
