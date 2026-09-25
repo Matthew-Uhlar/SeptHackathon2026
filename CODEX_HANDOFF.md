@@ -53,7 +53,7 @@ Check `git log` first. Items marked DONE below were finished after this file was
 
 ## Verification gap
 
-All test runs this session happened in a Linux shell with Python 3.10. The pinned versions need Python 3.11+ so the tests ran on pandas 2.3.3 and scikit-learn 1.7.2 (streamlit 1.64.0 and joblib 1.6.0 matched). Run the suite once on Windows with the real `.venv` before trusting the 43-pass result:
+All test runs this session happened in a Linux shell with Python 3.10. The pinned versions need Python 3.11+ so the tests ran on pandas 2.3.3 and scikit-learn 1.7.2 (streamlit 1.64.0 and joblib 1.6.0 matched). Run the suite once on Windows with the real `.venv` before trusting the 46-pass result:
 
 ```powershell
 .venv\Scripts\python -m pytest -q
