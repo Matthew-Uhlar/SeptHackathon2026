@@ -1,6 +1,6 @@
 # SignalReady proposal criteria
 
-Extracted from Matt's idea-phase deck (signalready_submission.pptx) on September 25 2026. This is the reference that feature work and quality reviews check against. The challenge page https://www.hackerearth.com/community/challenges/hackathon/abb-accelerator-2026/ was not reachable from the cloud session so rules were not re-verified there. The deck notes say the timeline was checked on September 12 2026.
+Extracted from Matt's idea-phase deck (signalready_submission.pptx) on September 25 2026. This is the reference that feature work and quality reviews check against. The official rules below come from a PDF capture of https://www.hackerearth.com/community/challenges/hackathon/abb-accelerator-2026/ taken September 25 2026 at 4:42 PM that Matt supplied.
 
 ## Event framing
 
@@ -74,3 +74,59 @@ Completion checks:
 ## Planned submission (slide 11)
 
 Working local app / source code with dataset credit / setup guide and project summary / short demo video and results summary. The intended benefit is an easier way to understand a basic maintenance modeling workflow. Cost and downtime savings require later testing.
+
+# Official challenge rules (HackerEarth page captured September 25 2026)
+
+## Timeline
+
+- Idea phase: Aug 11 to Sep 18 2026.
+- Prototype phase: the page header says Sep 18 to **Sep 27 2026 4:59 PM America/Chicago**. The timeline graphic further down says Sep 28. Treat Sep 27 4:59 PM Central as the deadline.
+- Onsite hackathon for top prototype teams: Oct 13 to Oct 14 2026 at ABB Fort Smith Arkansas.
+- Submissions can be updated until the deadline. Late or incomplete submissions will not be considered.
+
+## Theme 1: Agentic Predictive Maintenance Studio
+
+"Build an AI-powered AutoML + MLOps Copilot for Industrial Equipment." Help engineers analyze equipment data / identify potential failures before they occur / recommend optimal models / explain predictions / deploy production-ready ML pipelines through an intuitive AI-powered experience.
+
+The solution could include the following. Current SignalReady coverage is noted after each item.
+
+| Theme item | SignalReady status |
+|---|---|
+| Automated dataset profiling and quality assessment | Data readiness checks / correction table / outcome balance. Column profiling and answer-giveaway detection planned. |
+| Intelligent task and model selection | Fixed rule: highest selection-group F1 picks between two models. |
+| Data preprocessing and feature engineering | Training-only scaling and fixed type encoding. No engineered features. |
+| Model training and evaluation | Seeded 60/20/20 split with an always-no-failure baseline. |
+| Explainable AI using feature importance and confidence scores | Global importance chart. Per-prediction explanation and an uncalibrated model score planned. |
+| Experiment tracking and model comparison | Two-model comparison plus saved runs with audit metadata. Saved-run comparison table planned. |
+| One-click deployment of trained models | One-click local save and reload. No serving endpoint (proposal rules out a cloud service). |
+| Interactive prediction and inference dashboard | Single-reading form. Batch scoring of a CSV planned. |
+
+Suggested technologies: AI / ML / AutoML / MLOps / Python / FastAPI / MLflow / LangGraph / Docker / SHAP / LightGBM or XGBoost / PostgreSQL. SignalReady uses Python with scikit-learn / pandas / Streamlit.
+
+## Submission format
+
+1. Project summary: overview of the solution / the problem it solves / its impact.
+2. Working prototype or proof of concept.
+3. Demo video: a concise walkthrough of the solution / key features / functionality.
+4. Source code: link to a GitHub or other repository with the complete source code.
+5. Technical documentation: solution architecture / technologies used / implementation approach / setup instructions.
+6. Presentation deck (optional): problem statement / solution / technical architecture / business impact / future scope.
+
+## Judging criteria
+
+| Criterion | Weight | Description |
+|---|---|---|
+| Innovation and creativity | 20% | Originality and potential to solve real-world industrial challenges. |
+| Technical excellence | 25% | Implementation quality / architecture / engineering practices / effective use of recommended technologies. |
+| Problem-solution fit | 20% | Alignment with the selected theme and its objectives. |
+| Scalability and feasibility | 15% | Practicality / scalability / potential for real-world adoption. |
+| User experience | 10% | Usability / design / functionality. |
+| Presentation and demo | 10% | Clarity / demo quality / communication of impact. |
+
+## Rules
+
+- Register through the official microsite. Choose one theme. Submit one project.
+- All submissions must be original work developed during the hackathon period.
+- Open-source libraries and publicly available frameworks may be used with proper attribution and in compliance with their licenses.
+- Plagiarism / IP infringement / unethical conduct may result in disqualification.
+- Eligibility: students currently enrolled in accredited US colleges and universities. Team size 1 to 5. Individual participation is governed by ABB's final eligibility criteria. These are owner checks rather than code checks.
