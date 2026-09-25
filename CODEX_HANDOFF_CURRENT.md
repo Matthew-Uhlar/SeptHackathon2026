@@ -48,6 +48,13 @@ Matt asked for three development teams plus a quality team and a testing team wi
 
 Stay within the guided-studio framing. The deck says the user stays in control and rules out a separate chatbot.
 
+## Team 4 results (committed 7984413 and 64e5d4f)
+
+- Deliverables: PROJECT_SUMMARY / TECHNICAL_DOCUMENTATION / README / DEMO_GUIDE updated. New DEMO_SCRIPT / SUBMISSION_CHECKLIST / THIRD_PARTY_NOTICES / COMPLIANCE_REVIEW.
+- Docs contain `<!-- COORDINATOR: update after integration -->` markers where Team A/B/C features must be added once wired into app.py. Search for that string after integration.
+- Coordinator applied UI wording fixes: prediction disclaimer / dataset creator credit (S. Matzka, from agent knowledge because the UCI site is blocked) / explanation header. Kept "MAINTENANCE DATA ASSISTANT" because the idea deck uses that subtitle.
+- Owner actions: repo is private and work is on a non-default branch / record video / confirm eligibility and solo entry / decide AI-assistance note and license / portal upload before Sep 27 4:59 PM Central.
+
 ## Reproducing Claude's checks on Linux
 
 ```bash
