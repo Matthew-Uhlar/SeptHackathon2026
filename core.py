@@ -107,11 +107,13 @@ def check_data(df):
     normalized[NUMERIC + [TARGET]] = normalized[NUMERIC + [TARGET]].apply(pd.to_numeric, errors='coerce')
     duplicates = int(normalized.duplicated(subset=FEATURES + [TARGET]).sum())
     if duplicates:
-        warnings.append(f'{duplicates} repeated examples will be removed before splitting the data. IDs do not make repeated readings unique.')
+        noun = 'example' if duplicates == 1 else 'examples'
+        warnings.append(f'{duplicates} repeated {noun} will be removed before splitting the data. IDs do not make repeated readings unique.')
     unique = normalized.drop_duplicates(subset=FEATURES + [TARGET])
     if unique.duplicated(subset=FEATURES, keep=False).any():
         errors.append('Identical readings have conflicting failure labels. Resolve these before training.')
-    counts = pd.to_numeric(unique[TARGET], errors='coerce').value_counts()
+    # astype(float) makes True/False labels count as 1/0 like the other checks treat them.
+    counts = pd.to_numeric(unique[TARGET], errors='coerce').astype(float).value_counts()
     if min(counts.get(0, 0), counts.get(1, 0)) < 10:
         errors.append('At least 10 unique examples of each outcome are required for the three data groups.')
     if ignored:
@@ -129,30 +131,24 @@ def data_issue_examples(df, limit=20):
         raise ValueError('The example limit must be a nonnegative integer.')
     if limit == 0 or any(column not in df for column in FEATURES + [TARGET]):
         return []
-    issues = []
-    numeric = {column: pd.to_numeric(df[column], errors='coerce') for column in NUMERIC + [TARGET]}
-    missing = df[FEATURES + [TARGET]].isna()
-    for position in range(len(df)):
-        for column in FEATURES + [TARGET]:
-            problem = None
-            if missing[column].iloc[position]:
-                problem = 'Missing value. Fill in this required reading or label.'
-            elif column == 'Type':
-                if df[column].iloc[position] not in ('L', 'M', 'H'):
-                    problem = 'Choose L or M or H.'
-            else:
-                value = numeric[column].iloc[position]
-                if not np.isfinite(value):
-                    problem = 'Use a finite number.'
-                elif column == TARGET and value not in (0, 1):
-                    problem = 'Use 0 for no failure or 1 for failure.'
-                elif column in NUMERIC and value < 0:
-                    problem = 'Use a nonnegative reading. Check the units.'
-            if problem:
-                issues.append({'Data row': position + 1, 'Column': column, 'Problem': problem})
-                if len(issues) >= limit:
-                    return issues
-    return issues
+    columns = FEATURES + [TARGET]
+    messages = [None, 'Missing value. Fill in this required reading or label.', 'Choose L or M or H.', 'Use a finite number.',
+                'Use 0 for no failure or 1 for failure.', 'Use a nonnegative reading. Check the units.']
+    # One problem code per cell, vectorized so large files stay fast. The first matching rule wins.
+    codes = np.zeros((len(df), len(columns)), dtype=np.int8)
+    for j, column in enumerate(columns):
+        missing = df[column].isna().to_numpy()
+        if column == 'Type':
+            code = np.where(missing, 1, np.where(df[column].isin(['L', 'M', 'H']).to_numpy(), 0, 2))
+        else:
+            values = pd.to_numeric(df[column], errors='coerce').astype(float).to_numpy()
+            finite = np.isfinite(values)
+            out_of_rule = ~np.isin(values, [0, 1]) if column == TARGET else values < 0
+            code = np.where(missing, 1, np.where(~finite, 3, np.where(out_of_rule, 4 if column == TARGET else 5, 0)))
+        codes[:, j] = code
+    rows, cols = np.nonzero(codes)  # row-major order: parsed position then schema order
+    return [{'Data row': int(r) + 1, 'Column': columns[c], 'Problem': messages[codes[r, c]]}
+            for r, c in zip(rows[:limit], cols[:limit])]
 
 def class_balance(df):
     """Count outcomes among unique normalized examples, matching what training keeps.
@@ -226,9 +222,12 @@ def save_run(run, folder):
 def run_label(path):
     """Readable name for a saved run in the sidebar picker."""
     path = Path(path)
-    saved = datetime.fromtimestamp(path.stat().st_mtime)
     suffix = f' / {path.stem[-6:]}' if '-' in path.stem else ''
-    return f'Run {path.stem[:8]}{suffix} | saved {saved:%Y-%m-%d %H:%M:%S}'
+    try:
+        saved = f'saved {datetime.fromtimestamp(path.stat().st_mtime):%Y-%m-%d %H:%M:%S}'
+    except OSError:
+        saved = 'file missing'
+    return f'Run {path.stem[:8]}{suffix} | {saved}'
 
 def public_report(run):
     report = {k: v for k, v in run.items() if k not in ['model', 'split_indices']}

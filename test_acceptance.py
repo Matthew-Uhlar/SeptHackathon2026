@@ -7,7 +7,7 @@ saved runs. Edge cases found during exploratory testing are covered at the end.
 
 - Everything runs through streamlit.testing.v1.AppTest (no browser) with default_timeout=60.
 - Every test points SIGNALREADY_MODEL_DIR at a temporary folder. ./models is never touched.
-- Tests marked xfail(strict=True, raises=AssertionError) document open bugs from TEST_REPORT.md.
+- Bugs B1-B6 from TEST_REPORT.md are fixed. Their tests now run as ordinary regression tests.
   When a bug is fixed the test starts passing and strict mode fails the run as a reminder to
   remove the marker.
 - The one browser test is opt-in: set SIGNALREADY_BROWSER_TESTS=1 with Playwright and Chromium
@@ -121,7 +121,13 @@ def expander(where, label):
 
 
 def checks_table(app):
-    return expander(app.tabs[1], 'Completion checks').dataframe[0].value
+    # Shown with st.table (index Check / columns Result and Detail) so the evidence wraps on screen.
+    table = expander(app.tabs[1], 'Completion checks').table[0].value
+    return table.reset_index().rename(columns={'Result': 'Passed'})
+
+
+def giveaway_lines(tab):
+    return [m.value[2:] for m in tab.markdown if m.value.startswith('- Possible answer giveaway')]
 
 
 def run_completion_checks(app):
@@ -186,6 +192,7 @@ def demo(tmp_path_factory):
     choose_source(app, 'Included sample')
     included = SimpleNamespace(errors=[e.value for e in app.tabs[0].error],
                                warnings=[w.value for w in app.tabs[0].warning],
+                               giveaways=giveaway_lines(app.tabs[0]),
                                captions=[c.value for c in app.tabs[0].caption],
                                balance=next(m.value for m in app.tabs[0].markdown if m.value.startswith('Outcome balance')))
     started = time.perf_counter()
@@ -229,7 +236,7 @@ def test_demo_flawed_sample_is_caught_before_training(demo):
 def test_demo_included_sample_is_ready_and_flags_giveaways(demo):
     included = demo.included
     assert not included.errors
-    flagged = {w.split('Possible answer giveaway: ')[1].split(' ')[0] for w in included.warnings if w.startswith('Possible answer giveaway')}
+    flagged = {w.split('Possible answer giveaway: ')[1].split(' ')[0] for w in included.giveaways}
     assert flagged == {'TWF', 'HDF', 'PWF', 'OSF'}
     excluded = next(c for c in included.captions if c.startswith('Excluded columns: '))
     assert set(excluded.removeprefix('Excluded columns: ').split(', ')) == set(ANSWER_COLUMNS)
@@ -337,7 +344,7 @@ def test_slide10_answer_columns_never_enter_training(model_dir):
     frame = sample_frame().head(3000)
     frame['Failure copy'] = frame['Machine failure']  # an extra column identical to the answer
     app = upload_training_file(new_session(), 'with_copy.csv', csv_bytes(frame))
-    giveaways = [w.value for w in app.tabs[0].warning if w.value.startswith('Possible answer giveaway')]
+    giveaways = giveaway_lines(app.tabs[0])
     assert any(w.startswith('Possible answer giveaway: Failure copy') for w in giveaways), giveaways
     assert not button(app, 'Check and compare models').disabled
     click(app, 'Check and compare models', timeout=120)
@@ -546,11 +553,9 @@ def test_corrupt_saved_files_do_not_break_the_app(model_dir, sample_run):
 
 
 # ---------------------------------------------------------------------------------------------
-# Open bugs (xfail strict). See TEST_REPORT.md for steps / expected / actual.
+# Regression tests for bugs B1-B6 in TEST_REPORT.md. They were strict xfail tests until fixed.
 # ---------------------------------------------------------------------------------------------
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason='B3: True/False failure labels are counted by class_balance but check_data says there are fewer than 10 of each')
 def test_bool_labels_do_not_produce_contradictory_messages(model_dir):
     frame = sample_frame().head(600)
     frame['Machine failure'] = frame['Machine failure'].astype(bool)
@@ -561,13 +566,10 @@ def test_bool_labels_do_not_produce_contradictory_messages(model_dir):
     assert not any('At least 10 unique examples of each outcome' in e.value for e in app.tabs[0].error)
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason='B4: the flawed-sample warning reads "1 repeated examples will be removed"')
 def test_single_repeated_example_warning_is_grammatical(demo):
     assert any(w.startswith('1 repeated example will be removed') for w in demo.flawed.warnings), demo.flawed.warnings
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason='B5: a failed reload hides the specific reason from load_run (for example a scikit-learn version mismatch)')
 def test_failed_reload_explains_the_reason(model_dir, sample_run):
     run = dict(sample_run)
     run['metadata'] = {**sample_run['metadata'], 'dependencies': {**sample_run['metadata']['dependencies'], 'scikit-learn': '0.0.1'}}
@@ -576,8 +578,6 @@ def test_failed_reload_explains_the_reason(model_dir, sample_run):
     assert any('scikit-learn version' in e.value for e in app.error), [e.value for e in app.error]
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason='B6: with no active model a failed reload still says "Any previously active model remains selected"')
 def test_failed_reload_without_active_model_does_not_mention_one(model_dir):
     model_dir.mkdir(parents=True)
     (model_dir / 'broken.joblib').write_bytes(b'not a pickle')
@@ -586,8 +586,6 @@ def test_failed_reload_without_active_model_does_not_mention_one(model_dir):
     assert not any('previously active model remains selected' in e.value for e in app.error)
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason='B2: data_issue_examples scans cells in Python. A 50,000-row file with one bad cell takes about 12 s on every rerun')
 def test_issue_locator_is_fast_on_the_largest_allowed_file():
     frame = pd.concat([sample_frame()] * 5, ignore_index=True)
     frame.loc[49_999, 'Torque [Nm]'] = np.nan
@@ -604,8 +602,6 @@ PORT = int(os.environ.get('SIGNALREADY_TEST_PORT', '8540'))
 
 
 @pytest.mark.skipif(not BROWSER, reason='Browser check is opt-in: set SIGNALREADY_BROWSER_TESTS=1 (needs Playwright and Chromium)')
-@pytest.mark.xfail(strict=True, raises=AssertionError,
-                   reason='B1: saving right after training leaves a second stale tab bar and results block on the page')
 def test_browser_save_right_after_training_shows_one_tab_bar(tmp_path):
     sync_api = pytest.importorskip('playwright.sync_api')
     with socket.socket() as probe:

@@ -27,10 +27,60 @@ def run_identity(run):
     return run['fingerprint'], run_metadata(run).get('trained_at_utc'), run['winner']
 
 
-def run_checks(frame, active):
+def run_checks(frame, active, input_hash):
     # Runs as a button callback so the expander can stay open on the rerun that shows the results.
-    st.session_state.checks = (run_identity(active), completion_checks(frame, active, repeat=True))
+    st.session_state.checks = (run_identity(active), input_hash, completion_checks(frame, active, repeat=True))
     st.session_state.checks_open = True
+
+
+# Actions that change what is shown above the tabs run as button callbacks. The callback finishes
+# before the script reruns so the page is drawn once in its new state. A mid-script st.rerun()
+# left a stale second tab bar in the browser.
+def train_model(frame, source_label):
+    try:
+        st.session_state.run = train(frame, source_label=source_label)
+    except ValueError as exc:
+        st.session_state.train_error = 'The comparison could not complete: ' + str(exc)
+        return
+    st.session_state.loaded = False
+    st.session_state.pop('reload_error', None)
+    st.session_state.pop('train_error', None)
+    st.session_state.notice = 'Comparison ready. Showing the Model comparison tab.'
+    st.session_state.active_tab = TAB_LABELS[1]
+
+
+def save_active(active):
+    try:
+        st.session_state.latest_save = save_run(active, MODEL_DIR)
+    except OSError:
+        st.session_state.save_error = 'The run could not be saved. Check that the local model folder is writable and try again.'
+        return
+    st.session_state.pop('save_error', None)
+    st.session_state.notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
+
+
+def clear_active():
+    st.session_state.pop('run', None)
+    st.session_state.pop('reload_error', None)
+    st.session_state.loaded = False
+
+
+def reload_selected():
+    choice = st.session_state.get('saved_run_choice')
+    try:
+        st.session_state.run = load_run(choice)
+    except Exception as exc:
+        reason = str(exc) if isinstance(exc, ValueError) else 'The file is not a readable SignalReady run.'
+        kept = ' The previously active model remains selected.' if st.session_state.get('run') else ''
+        st.session_state.reload_error = f'The selected saved run could not be loaded. {reason}{kept} Choose another saved run or train a new one.'
+        return
+    st.session_state.loaded = True
+    st.session_state.pop('reload_error', None)
+    st.session_state.notice = 'Saved run restored. Its results belong to its original data.'
+    st.session_state.active_tab = TAB_LABELS[1]
+
+
+TAB_LABELS = ['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model']
 
 
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
@@ -52,21 +102,14 @@ with st.sidebar:
         latest_save = st.session_state.pop('latest_save', None)
         if latest_save in saved:
             st.session_state.saved_run_choice = latest_save
-        choice = st.selectbox('Saved local runs', saved, format_func=run_label, key='saved_run_choice')
-        if st.button('Reload saved model'):
-            try:
-                st.session_state.run = load_run(choice)
-                st.session_state.loaded = True
-                st.session_state.pop('reload_error', None)
-                st.success('Saved run restored. Its results belong to its original data.')
-            except Exception:
-                st.session_state.reload_error = 'The requested saved run could not be loaded. Any previously active model remains selected. Choose another saved run or train a new one.'
+        elif st.session_state.get('saved_run_choice') not in (None, *saved):
+            # The chosen file disappeared. Say so instead of silently switching to another run.
+            st.session_state.pop('saved_run_choice')
+            st.warning('The previously selected saved run is no longer in the model folder. Choose a run from the list.')
+        st.selectbox('Saved local runs', saved, format_func=run_label, key='saved_run_choice')
+        st.button('Reload saved model', on_click=reload_selected)
     if st.session_state.get('run'):
-        if st.button('Clear active model'):
-            st.session_state.pop('run', None)
-            st.session_state.pop('reload_error', None)
-            st.session_state.loaded = False
-            st.rerun()
+        st.button('Clear active model', on_click=clear_active)
 
 raw = None
 if source == 'Included sample':
@@ -97,11 +140,7 @@ if st.session_state.get('notice'):
 active_run = st.session_state.get('run')
 if active_run:
     st.caption('Active model: ' + active_run['winner'] + ' · dataset ' + active_run['fingerprint'][:12])
-# A stable key keeps the open tab when a rerun adds elements above it, such as after saving.
-TAB_LABELS = ['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model']
-# A tab can only be switched before the tabs render so actions request it for the next run.
-if st.session_state.get('switch_tab') in TAB_LABELS:
-    st.session_state.active_tab = st.session_state.pop('switch_tab')
+# A stable key keeps the open tab across reruns. Button callbacks switch tabs by setting this key.
 df = None
 data_tab, results_tab, prediction_tab, explain_tab = st.tabs(TAB_LABELS, key='active_tab', on_change='rerun')
 with data_tab:
@@ -120,8 +159,13 @@ with data_tab:
             c.metric('Repeated examples', report['duplicates'])
             for issue in report['errors']: st.error(issue)
             for issue in report['warnings']: st.warning(issue)
-            for item in answer_giveaway_columns(df):
-                st.warning('Possible answer giveaway: ' + item['Evidence'])
+            giveaways = answer_giveaway_columns(df)
+            if giveaways:
+                names = [item['Column'] for item in giveaways]
+                st.info(f"{len(names)} excluded column{'s' if len(names) != 1 else ''} may give away the answer: {', '.join(names)}. They are already kept out of training.")
+                with st.expander('Why these columns look like answer giveaways'):
+                    for item in giveaways:
+                        st.markdown('- Possible answer giveaway: ' + item['Evidence'])
             # Every located problem also raises a blocking error so a clean file skips the cell-by-cell scan.
             examples = data_issue_examples(df, limit=ISSUE_EXAMPLE_LIMIT) if report['errors'] else []
             if examples:
@@ -149,18 +193,10 @@ with data_tab:
                 st.write('Required: ' + ', '.join(FEATURES + [TARGET]))
                 st.dataframe(df.head(100), hide_index=True)
             st.caption('The app removes repeated examples before reserving 20% for a final check. Another 20% selects the model. The remaining 60% trains it.')
-            if st.button('Check and compare models', type='primary', disabled=bool(report['errors'])):
-                try:
-                    with st.spinner('Training two models and checking their results…'):
-                        source_label = {'Included sample': 'UCI AI4I generated sample', 'Try a flawed sample': 'Intentionally flawed demo sample', 'Upload a CSV': 'Uploaded CSV (origin not verified)'}[source]
-                        st.session_state.run = train(df, source_label=source_label)
-                        st.session_state.loaded = False
-                        st.session_state.pop('reload_error', None)
-                    st.session_state.notice = 'Comparison ready. Showing the Model comparison tab.'
-                    st.session_state.switch_tab = TAB_LABELS[1]
-                    st.rerun()
-                except ValueError as exc:
-                    st.error('The comparison could not complete: ' + str(exc))
+            source_label = {'Included sample': 'UCI AI4I generated sample', 'Try a flawed sample': 'Intentionally flawed demo sample', 'Upload a CSV': 'Uploaded CSV (origin not verified)'}[source]
+            st.button('Check and compare models', type='primary', disabled=bool(report['errors']), on_click=train_model, args=(df, source_label))
+            if st.session_state.get('train_error'):
+                st.error(st.session_state.pop('train_error'))
     else:
         st.write('Choose the included sample or upload a CSV to begin.')
 
@@ -186,10 +222,13 @@ with results_tab:
         st.markdown('\n'.join('- ' + sentence for sentence in results_summary(run)))
         with st.expander('Completion checks', key='checks_open', on_change='rerun'):
             st.write('These checks test key promises of this workflow against the active run. The repeat check retrains on the selected file when it matches the run.')
-            st.button('Run completion checks', on_click=run_checks, args=(df, run))
+            st.button('Run completion checks', on_click=run_checks, args=(df, run, st.session_state.get('input_hash')))
             stored = st.session_state.get('checks')
-            if stored and stored[0] == run_identity(run):
-                st.dataframe(pd.DataFrame([{**c, 'Passed': CHECK_LABELS[c['Passed']]} for c in stored[1]]), hide_index=True, use_container_width=True)
+            if stored and stored[0] == run_identity(run) and stored[1] == st.session_state.get('input_hash'):
+                # A static table wraps the Detail text so the evidence is readable on screen.
+                st.table(pd.DataFrame([{'Check': c['Check'], 'Result': CHECK_LABELS[c['Passed']], 'Detail': c['Detail']} for c in stored[2]]).set_index('Check'))
+            elif stored:
+                st.caption('The selected file or active run changed since the last check. Run the checks again.')
         with st.expander('How this run was checked'):
             st.write('Data source: ' + run.get('source_label', 'Unknown (legacy run)'))
             metadata = run_metadata(run)
@@ -197,14 +236,9 @@ with results_tab:
             st.json({'rows':run['counts'],'dataset fingerprint':run['fingerprint'],'approved inputs':run['features'],'random seed':run['seed']})
             st.json({'saved format': metadata['format_version'], 'software versions': metadata['dependencies']})
             st.write('These random row splits evaluate the supplied dataset. They do not establish performance on future time periods or different machines. Avoid repeatedly adjusting a model after viewing final results.')
-        if st.button('Save selected model locally'):
-            try:
-                saved_path = save_run(run, MODEL_DIR)
-                st.session_state.latest_save = saved_path
-                st.session_state.notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
-                st.rerun()
-            except OSError:
-                st.error('The run could not be saved. Check that the local model folder is writable and try again.')
+        st.button('Save selected model locally', on_click=save_active, args=(run,))
+        if st.session_state.get('save_error'):
+            st.error(st.session_state.pop('save_error'))
         st.download_button('Download results report', json.dumps(public_report(run),indent=2), 'signalready-results.json','application/json')
         st.download_button('Download results report (readable)', text_report(run), 'signalready-results.txt','text/plain')
     else: st.write('Run the data check and model comparison first.')
