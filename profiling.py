@@ -106,20 +106,36 @@ def _numeric_evidence(values, y):
 
 
 def _text_evidence(values, y):
-    """Flag text whose repeated values each match a single outcome. Unique IDs never qualify."""
+    """Return (strength, sentence) for a text excluded column or None. Unique IDs never qualify.
+
+    Two paths. The strict path flags text whose repeated values each match a single outcome.
+    The tolerant path mirrors the numeric nonzero rule: repeated values that are almost always
+    labeled as failures and together fill no more than half of the labeled rows. It catches a
+    "failure type" column even when a few rows carry a noisy label. Evidence reports counts and
+    percentages only so no text value is repeated back.
+    """
     text = values.astype(str).str.strip()
     counts = text.value_counts()
     repeated = counts[counts >= MIN_SUPPORT].index
-    if len(repeated) < 2:
+    if len(repeated) == 0:
         return None
     covered = text.isin(repeated)
-    if covered.sum() < TEXT_COVERAGE * len(text):
+    if len(repeated) >= 2 and covered.sum() >= TEXT_COVERAGE * len(text) and y[covered].nunique() == 2:
+        purity = y[covered].groupby(text[covered]).agg(['min', 'max'])
+        if (purity['min'] == purity['max']).all():
+            return 1.0, (f'Each of its {len(repeated)} repeated text values appears only with failure labels or only with '
+                         f'no-failure labels. These cover {_share(covered.mean())} of labeled rows.')
+    rates = y[covered].groupby(text[covered]).mean()
+    failure_values = rates[rates >= GIVEAWAY_NONZERO_RATE].index
+    rows = text.isin(failure_values)
+    support = int(rows.sum())
+    if len(failure_values) == 0 or not MIN_SUPPORT <= support <= 0.5 * len(text):
         return None
-    purity = y[covered].groupby(text[covered]).agg(['min', 'max'])
-    if (purity['min'] != purity['max']).any() or y[covered].nunique() < 2:
-        return None
-    return 1.0, (f'Each of its {len(repeated)} repeated text values appears only with failure labels or only with '
-                 f'no-failure labels. These cover {_share(covered.mean())} of labeled rows.')
+    rate = float(y[rows].mean())
+    values_word = 'repeated text value is' if len(failure_values) == 1 else 'repeated text values are'
+    return rate, (f'{len(failure_values)} of its {values_word} labeled as failures in at least '
+                  f'{_share(GIVEAWAY_NONZERO_RATE)} of their rows. Together they fill {support:,} labeled rows '
+                  f'({_share(support / len(text))} of the total) where {_share(rate)} are labeled as failures.')
 
 
 def answer_giveaway_columns(df):
@@ -132,7 +148,9 @@ def answer_giveaway_columns(df):
       5 nonzero rows that make up no more than half of the labeled rows).
     - Text column. Flag when at least two values each appear in 5 or more rows / those
       values cover at least 95% of filled rows / each value appears with only one outcome
-      and both outcomes occur. Unique IDs never qualify.
+      and both outcomes occur. Also flag (tolerant path) when repeated values that each
+      appear in 5 or more rows with at least 95% failure labels together fill at least
+      5 rows and no more than half of the labeled rows. Unique IDs never qualify.
     Returns [{'Column', 'Evidence', 'Strength'}] sorted by strength (strongest first).
     """
     if core.TARGET not in df.columns or list(df.columns).count(core.TARGET) != 1:
@@ -158,8 +176,9 @@ def answer_giveaway_columns(df):
             strength, detail = result
             flagged.append({'Column': str(name), 'Strength': round(float(strength), 4),
                             'Evidence': f'{name} is already excluded from training. {detail} Such strong agreement with the '
-                                        'failure label suggests this column records the answer rather than a reading taken '
-                                        'beforehand. This is a pattern in the file rather than proof of a cause.'})
+                                        'failure label suggests this column may record the answer or be filled in after the '
+                                        'outcome rather than a reading taken beforehand. This is a pattern in the file '
+                                        'rather than proof of a cause.'})
     return sorted(flagged, key=lambda item: (-item['Strength'], item['Column']))
 
 

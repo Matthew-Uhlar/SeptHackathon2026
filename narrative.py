@@ -7,6 +7,9 @@ No language model is involved and nothing here refits or tunes a model.
 
 BASELINE = 'Always no failure'
 COUNT_KEYS = ['Failures found', 'Failures missed', 'False alarms', 'Correct no-failure readings']
+# Source labels set by the app for the included generated files. Anything else (uploads / legacy / unknown)
+# is described as supplied data whose origin has not been verified.
+GENERATED_SOURCES = ('UCI AI4I generated sample', 'Intentionally flawed demo sample')
 
 
 def _n(count, singular, plural=None):
@@ -136,7 +139,15 @@ def results_summary(run):
     if 0 < failures < 30:
         sentences.append(f'Caution: the final check contains only {_n(failures, "actual failure")}. '
                          'A few different readings could change these rates noticeably so treat them as rough.')
-    sentences.append('These results come from generated equipment data split into random rows. '
-                     'They describe how the model sorted held-out readings. '
-                     'They do not forecast when a real machine will break down or prove performance on real equipment.')
+    sentences.append(_source_sentence(run))
     return sentences
+
+
+def _source_sentence(run):
+    if run.get('source_label') in GENERATED_SOURCES:
+        origin = 'These results come from generated equipment data split into random rows. '
+    else:
+        origin = ('These results come from the supplied data split into random rows. '
+                  'Its origin has not been verified. ')
+    return (origin + 'They describe how the model sorted held-out readings. '
+            'They do not forecast when a real machine will break down or prove performance on real equipment.')

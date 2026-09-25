@@ -172,3 +172,25 @@ def test_zero_failures_tradeoff_talks_only_about_false_alarms():
     assert 'Random forest raised 3 warnings. All of them were false alarms.' in text
     assert 'Logistic regression raised 7 false alarms compared with 3 for Random forest' in text
     assert '0 compared with 0' not in text
+
+
+@pytest.mark.parametrize('label', ['UCI AI4I generated sample', 'Intentionally flawed demo sample'])
+def test_closing_sentence_for_generated_sources(label):
+    run = dict(synthetic((30, 10, 10, 150), (25, 15, 5, 155)), source_label=label)
+    sentences = results_summary(run)
+    assert_style(sentences)
+    assert sentences[-1].startswith('These results come from generated equipment data split into random rows.')
+    assert 'not been verified' not in sentences[-1]
+
+
+@pytest.mark.parametrize('label', ['Uploaded CSV (origin not verified)', 'Unknown legacy source', 'Unspecified CSV', None])
+def test_closing_sentence_for_uploads_and_unknown_sources(label):
+    run = synthetic((30, 10, 10, 150), (25, 15, 5, 155))
+    if label is not None:
+        run['source_label'] = label
+    sentences = results_summary(run)
+    assert_style(sentences)
+    last = sentences[-1]
+    assert 'generated equipment data' not in ' '.join(sentences)
+    assert last.startswith('These results come from the supplied data split into random rows. Its origin has not been verified.')
+    assert 'do not forecast when a real machine will break down or prove performance on real equipment' in last
