@@ -55,7 +55,7 @@ Completion checks run in a button callback so the keyed expander (key checks_ope
 Status at 19ac460 (master synced at 0ca9588):
 - Team 4 docs updated for the integrated app (committed 0ca9588). demo/SignalReady_demo.mp4 re-recorded with all features: 4:53, captioned, no voice.
 - Quality review phase 2 (QUALITY_REVIEW_PHASE2.md): no P1. Coordinator fixed Q3 (skip cell scan on clean files) / Q10-Q13 wording / Q15 test isolation in 19ac460.
-- Fix team (in progress, owns narrative / profiling / completion_checks / inference + their tests): Q1 source-aware narrative closing / Q2 tolerant text giveaway / Q5-Q7 completion check strength / Q8 softer giveaway wording / Q9 batch column renamed to 'Model score (uncalibrated)' + formula-safe IDs. After it lands: update any doc quoting the old batch column name / rerun suite / re-record the video if visible text changed / sync master.
+- Fix team DONE (1920763 + f90e03c), full suite 205 passed in 77 s: Q1 source-aware narrative closing / Q2 tolerant text giveaway / Q5-Q7 completion check strength / Q8 softer giveaway wording / Q9 batch column renamed to 'Model score (uncalibrated)' + formula-safe IDs. No doc quoted the old batch column name. Remaining: docs still say 192 tests (update after the testing team lands) / re-record the video because completion-check and giveaway text changed / sync master.
 - Testing team (in progress): writes test_acceptance.py + TEST_REPORT.md.
 
 Earlier note - in progress after 6d7058b: quality team (writes QUALITY_REVIEW_PHASE2.md) / testing team (writes test_acceptance.py + TEST_REPORT.md) / Team 4 updating docs at COORDINATOR markers / coordinator re-recording demo/SignalReady_demo.mp4 with the new features. Act on their findings next.
