@@ -66,8 +66,10 @@ def test_repeatable_training_and_persistence(small, tmp_path):
     restored = joblib.load(saved)
     np.testing.assert_array_equal(first['model'].predict(small[FEATURES]), restored['model'].predict(small[FEATURES]))
 
-def test_unsaved_run_cleared_on_source_change(small, tmp_path):
+def test_unsaved_run_cleared_on_source_change(small, tmp_path, monkeypatch):
     from streamlit.testing.v1 import AppTest
+    # The copied app must fall back to its own models folder.
+    monkeypatch.delenv('SIGNALREADY_MODEL_DIR', raising=False)
     shutil.copyfile(ROOT / 'app.py', tmp_path / 'app.py')
     (tmp_path / 'data').mkdir()
     small.to_csv(tmp_path / 'data/ai4i2020.csv', index=False)
@@ -83,8 +85,10 @@ def test_unsaved_run_cleared_on_source_change(small, tmp_path):
     assert 'run' not in app.session_state
     assert not (tmp_path / 'models').exists()
 
-def test_incompatible_saved_object_is_rejected_without_ui_crash(small, tmp_path):
+def test_incompatible_saved_object_is_rejected_without_ui_crash(small, tmp_path, monkeypatch):
     from streamlit.testing.v1 import AppTest
+    # The copied app must fall back to its own models folder.
+    monkeypatch.delenv('SIGNALREADY_MODEL_DIR', raising=False)
     shutil.copyfile(ROOT / 'app.py', tmp_path / 'app.py')
     (tmp_path / 'data').mkdir()
     small.to_csv(tmp_path / 'data/ai4i2020.csv', index=False)

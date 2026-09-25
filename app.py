@@ -122,7 +122,8 @@ with data_tab:
             for issue in report['warnings']: st.warning(issue)
             for item in answer_giveaway_columns(df):
                 st.warning('Possible answer giveaway: ' + item['Evidence'])
-            examples = data_issue_examples(df, limit=ISSUE_EXAMPLE_LIMIT)
+            # Every located problem also raises a blocking error so a clean file skips the cell-by-cell scan.
+            examples = data_issue_examples(df, limit=ISSUE_EXAMPLE_LIMIT) if report['errors'] else []
             if examples:
                 with st.expander('Where to correct the file', expanded=True):
                     st.dataframe(pd.DataFrame(examples), hide_index=True, use_container_width=True)
@@ -141,7 +142,7 @@ with data_tab:
                 st.caption('Excluded columns: ' + ', '.join(report['ignored']))
             with st.expander('Column profile'):
                 st.dataframe(profile_columns(df), hide_index=True, use_container_width=True)
-                st.caption('Counts and number ranges for every column. Text values are not repeated here. Only rows marked Input or Target are used for training.')
+                st.caption('Counts and number ranges for every column. Text values are not repeated here. Only columns marked Input or Target are used for training.')
             if not report['errors']:
                 st.success('Ready for the demo workflow. Only the six approved equipment inputs will enter training.')
             with st.expander('View readings and required columns'):
@@ -184,7 +185,7 @@ with results_tab:
         st.subheader('What these results mean')
         st.markdown('\n'.join('- ' + sentence for sentence in results_summary(run)))
         with st.expander('Completion checks', key='checks_open', on_change='rerun'):
-            st.write('These checks confirm the promises this workflow makes for the active run. The repeat check retrains on the selected file when it matches the run.')
+            st.write('These checks test key promises of this workflow against the active run. The repeat check retrains on the selected file when it matches the run.')
             st.button('Run completion checks', on_click=run_checks, args=(df, run))
             stored = st.session_state.get('checks')
             if stored and stored[0] == run_identity(run):
@@ -242,10 +243,10 @@ with prediction_tab:
                 st.subheader('How the score responds to each reading')
                 changes = pd.DataFrame(what_if(run,row))
                 if changes['Score change'].abs().max() < 0.001:
-                    st.write('Replacing any single reading with its training average barely moves this score.')
+                    st.write('Changing any single input barely moves this score. Each reading was replaced by its training average and the product type by each other type.')
                 else:
                     st.dataframe(changes, hide_index=True, use_container_width=True, column_config={'Score change': st.column_config.NumberColumn(format='%+.3f')})
-                    st.caption('A positive score change means the current value raises the score compared with the training average.')
+                    st.caption('A positive score change means the current value raises the score compared with the training average or the other product type.')
                 st.caption(WHAT_IF_NOTE)
             except ValueError as exc:
                 st.error(str(exc))
