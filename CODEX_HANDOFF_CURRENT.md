@@ -33,7 +33,7 @@ Updated September 25 2026 by Claude (cloud session). This supersedes the status 
 - Fresh-machine Windows install and a human-timed demo recording remain unverified.
 - Participant identity / publication / recording / portal upload remain owner tasks. Recheck event requirements before asserting deadlines.
 - Optional agentic or rule-based recommendation direction still needs Matt's answer. Do not implement without it.
-- Possible polish (not started): after training the success message asks the user to open Model comparison. With the keyed tabs the app could switch there automatically by setting `st.session_state.active_tab` before the tabs render. Leave it unless Matt wants it.
+- Done: after training the app switches to Model comparison through a `switch_tab` request applied before the tabs render. The one-time success message uses `st.session_state.notice`. Test in test_session_recovery.py.
 
 ## Team round (in progress)
 
@@ -42,6 +42,7 @@ Matt asked for three development teams plus a quality team and a testing team wi
 - Team A: profiling.py + test_profiling.py: profile_columns / answer_giveaway_columns / saved_run_table (experiment tracking).
 - Team B: narrative.py / completion_checks.py / make_results_summary.py -> RESULTS_SUMMARY.md plus tests.
 - Team C: inference.py + test_inference.py: model_score with an uncalibrated-score note / what_if per-prediction sensitivity / score_batch for CSV scoring.
+- Team 4 (deliverables and compliance): may edit README / DEMO_GUIDE / PROJECT_SUMMARY / TECHNICAL_DOCUMENTATION and create SUBMISSION_CHECKLIST / THIRD_PARTY_NOTICES / DEMO_SCRIPT / COMPLIANCE_REVIEW. No code edits.
 - Coordinator integrates the modules into app.py. PROJECT_SUMMARY.md and TECHNICAL_DOCUMENTATION.md (submission items 1 and 5) are drafted. Update their module map after integration.
 - Quality team reviews against PROPOSAL_CRITERIA.md and the official rules. Testing team adds test_acceptance.py and TEST_REPORT.md.
 
