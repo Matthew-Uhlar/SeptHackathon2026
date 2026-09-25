@@ -35,6 +35,18 @@ Updated September 25 2026 by Claude (cloud session). This supersedes the status 
 - Optional agentic or rule-based recommendation direction still needs Matt's answer. Do not implement without it.
 - Possible polish (not started): after training the success message asks the user to open Model comparison. With the keyed tabs the app could switch there automatically by setting `st.session_state.active_tab` before the tabs render. Leave it unless Matt wants it.
 
+## Planned next round (not started)
+
+Matt asked for three development teams plus a quality team and a testing team with Claude overseeing. PROPOSAL_CRITERIA.md holds the idea-phase deck content. Claude is waiting for a PDF copy of the HackerEarth challenge page because the cloud environment blocks that site. Planned features map to the deck:
+
+- Team A: answer-giveaway column check for excluded columns (slide 2). New leakage.py with tests.
+- Team B: prepared plain-language results summary (slides 6 and 11). New narrative.py with tests plus a script that writes RESULTS_SUMMARY.md.
+- Team C: in-app completion checks and repeat-run verification (slides 8 and 10). New completion_checks.py with tests.
+- Coordinator integrates the modules into app.py and writes PROJECT_SUMMARY.md.
+- Quality team reviews against PROPOSAL_CRITERIA.md and the official rules. Testing team adds test_acceptance.py and TEST_REPORT.md.
+
+Stay within the guided-studio framing. The deck says the user stays in control and rules out a separate chatbot.
+
 ## Reproducing Claude's checks on Linux
 
 ```bash
