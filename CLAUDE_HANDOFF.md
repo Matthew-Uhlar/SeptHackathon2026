@@ -1,5 +1,7 @@
 # SignalReady Development Handoff
 
+Updated September 25 2026: Read **CLAUDE_HANDOFF_CURRENT.md** in this folder first. It supersedes every status and next-work section below. The remainder of this file preserves the initial September 24 handoff as historical context. Current implementation and tests have progressed beyond it.
+
 Prepared: September 24, 2026
 
 ## Purpose

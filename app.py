@@ -1,18 +1,20 @@
 from pathlib import Path
 import hashlib
 import json
-import joblib
+import os
+import altair as alt
 import pandas as pd
 import streamlit as st
-from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label
+from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label, load_run, explanation_note, run_metadata
 
 ROOT = Path(__file__).parent
+MODEL_DIR = Path(os.environ.get('SIGNALREADY_MODEL_DIR', str(ROOT / 'models')))
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
 st.markdown('''<style>.stApp{background:#f6f9fa}h1,h2,h3{color:#153b43}div[data-testid="stMetric"]{background:white;padding:18px;border-radius:10px} .block-container{max-width:1200px;padding-top:2.5rem}</style>''', unsafe_allow_html=True)
 st.caption('MAINTENANCE DATA ASSISTANT')
 st.title('SignalReady')
 st.write('Check your equipment data. Compare models. Understand the mistakes.')
-st.info('Prototype using generated equipment data. Predictions identify failure patterns in readings. They do not predict when a real machine will break down.')
+st.info('The included samples use generated equipment data. Uploaded data has not been independently verified. Predictions identify failure patterns in readings. They do not predict when a real machine will break down.')
 with st.sidebar:
     st.header('Your workspace')
     source = st.radio('Data source', ['Included sample', 'Upload a CSV', 'Try a flawed sample'])
@@ -20,17 +22,27 @@ with st.sidebar:
     st.caption('Your data stays in this local app. Training requires the AI4I column format.')
     st.link_button('About the sample data', 'https://doi.org/10.24432/C5HS5C')
     st.caption('AI4I 2020 dataset · UCI Machine Learning Repository · CC BY 4.0')
-    saved = sorted((ROOT / 'models').glob('*.joblib')) if (ROOT / 'models').exists() else []
+    saved = sorted(MODEL_DIR.glob('*.joblib')) if MODEL_DIR.exists() else []
     if saved:
-        st.caption('PROTOTYPE — generated data, not a live equipment connection.')
-        choice = st.selectbox('Saved local runs', saved, format_func=run_label)
+        st.caption('PROTOTYPE — no live equipment connection.')
+        latest_save = st.session_state.pop('latest_save', None)
+        if latest_save in saved:
+            st.session_state.saved_run_choice = latest_save
+        choice = st.selectbox('Saved local runs', saved, format_func=run_label, key='saved_run_choice')
         if st.button('Reload saved model'):
             try:
-                st.session_state.run = joblib.load(choice)
+                st.session_state.run = load_run(choice)
                 st.session_state.loaded = True
+                st.session_state.pop('reload_error', None)
                 st.success('Saved run restored. Its results belong to its original data.')
             except Exception:
-                st.error('This saved run could not be loaded. Train a new run with the current app.')
+                st.session_state.reload_error = 'The requested saved run could not be loaded. Any previously active model remains selected. Choose another saved run or train a new one.'
+    if st.session_state.get('run'):
+        if st.button('Clear active model'):
+            st.session_state.pop('run', None)
+            st.session_state.pop('reload_error', None)
+            st.session_state.loaded = False
+            st.rerun()
 
 raw = None
 if source == 'Included sample':
@@ -54,6 +66,13 @@ if fingerprint != st.session_state.get('input_hash'):
         st.session_state.pop('run', None)
     st.session_state.input_hash = fingerprint
 
+if st.session_state.get('reload_error'):
+    st.error(st.session_state.reload_error)
+if st.session_state.get('save_notice'):
+    st.success(st.session_state.pop('save_notice'))
+active_run = st.session_state.get('run')
+if active_run:
+    st.caption('Active model: ' + active_run['winner'] + ' · dataset ' + active_run['fingerprint'][:12])
 data_tab, results_tab, prediction_tab, explain_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model'])
 with data_tab:
     st.header('Is the data ready?')
@@ -80,10 +99,15 @@ with data_tab:
                 st.dataframe(df.head(100), hide_index=True)
             st.caption('The app removes repeated examples before reserving 20% for a final check. Another 20% selects the model. The remaining 60% trains it.')
             if st.button('Check and compare models', type='primary', disabled=bool(report['errors'])):
-                with st.spinner('Training two models and checking their results…'):
-                    st.session_state.run = train(df)
-                    st.session_state.loaded = False
-                st.success('Comparison ready. Open the Model comparison tab.')
+                try:
+                    with st.spinner('Training two models and checking their results…'):
+                        source_label = {'Included sample': 'UCI AI4I generated sample', 'Try a flawed sample': 'Intentionally flawed demo sample', 'Upload a CSV': 'Uploaded CSV (origin not verified)'}[source]
+                        st.session_state.run = train(df, source_label=source_label)
+                        st.session_state.loaded = False
+                        st.session_state.pop('reload_error', None)
+                    st.success('Comparison ready. Open the Model comparison tab.')
+                except ValueError as exc:
+                    st.error('The comparison could not complete: ' + str(exc))
     else:
         st.write('Choose the included sample or upload a CSV to begin.')
 
@@ -92,7 +116,7 @@ with results_tab:
     st.header('What did the models miss?')
     if run:
         st.subheader('Selected model: ' + run['winner'])
-        st.caption('PROTOTYPE — generated data, not a live equipment connection.')
+        st.caption('PROTOTYPE — no live equipment connection.')
         if st.session_state.get('loaded'):
             st.info('Showing a saved run. These results describe its original dataset rather than the currently selected file.')
         st.caption('Selection uses F1 on the separate selection group. F1 balances failures found with correct warnings. The final check does not choose the winner. The decision threshold stays at 0.5.')
@@ -106,11 +130,20 @@ with results_tab:
         st.write('A missed failure is an actual failure the model did not flag. A false alarm is a warning on a reading labeled as no failure.')
         st.caption('The always-no-failure row shows why a high overall accuracy can be misleading when failures are rare.')
         with st.expander('How this run was checked'):
+            st.write('Data source: ' + run.get('source_label', 'Unknown (legacy run)'))
+            metadata = run_metadata(run)
+            st.write('Training time (UTC): ' + (metadata.get('trained_at_utc') or 'Unknown (legacy run)'))
             st.json({'rows':run['counts'],'dataset fingerprint':run['fingerprint'],'approved inputs':run['features'],'random seed':run['seed']})
-            st.write('These random row splits evaluate this generated dataset. They do not establish performance on future time periods or different machines. Avoid repeatedly adjusting a model after viewing final results.')
+            st.json({'saved format': metadata['format_version'], 'software versions': metadata['dependencies']})
+            st.write('These random row splits evaluate the supplied dataset. They do not establish performance on future time periods or different machines. Avoid repeatedly adjusting a model after viewing final results.')
         if st.button('Save selected model locally'):
-            saved_path = save_run(run, ROOT / 'models')
-            st.success('Saved. Use the sidebar to reload this run after restarting.')
+            try:
+                saved_path = save_run(run, MODEL_DIR)
+                st.session_state.latest_save = saved_path
+                st.session_state.save_notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
+                st.rerun()
+            except OSError:
+                st.error('The run could not be saved. Check that the local model folder is writable and try again.')
         st.download_button('Download results report', json.dumps(public_report(run),indent=2), 'signalready-results.json','application/json')
         st.download_button('Download results report (readable)', text_report(run), 'signalready-results.txt','text/plain')
     else: st.write('Run the data check and model comparison first.')
@@ -129,24 +162,35 @@ with prediction_tab:
                 row[name]=columns[i%2].number_input(name,min_value=0.,value=value)
             submitted=st.form_submit_button('Check these readings')
         if submitted:
-            outcome,outside=predict(run,row)
-            if outside:
-                st.warning('Outside the training range: '+', '.join(outside)+'. This model may be unreliable for these readings.')
-            if outcome: st.warning('The model flags a failure pattern in these readings.')
-            else: st.info('The model does not flag a failure pattern in these readings.')
-            st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
-            st.caption('PROTOTYPE — generated data, not a live equipment connection.')
+            try:
+                outcome,outside=predict(run,row)
+                if outside:
+                    st.warning('Outside the training range: '+', '.join(outside)+'. This model may be unreliable for these readings.')
+                if outcome: st.warning('The model flags a failure pattern in these readings.')
+                else: st.info('The model does not flag a failure pattern in these readings.')
+                st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
+                st.caption('PROTOTYPE — no live equipment connection.')
+            except ValueError as exc:
+                st.error(str(exc))
     else: st.write('Train or reload a saved model to try a prediction.')
 
 with explain_tab:
     st.header('What drove the model\'s decisions?')
     if run:
-        st.caption('This shows model behavior on the training and selection data only, never the final-check group. It does not show a physical cause of failure or a repair recommendation.')
+        st.caption('These scores come from the fitted model using its training examples. The explanation calculation does not use the selection or final-check groups. It does not show a physical cause of failure or a repair recommendation.')
+        if st.session_state.get('loaded'):
+            st.info('Showing the saved model. These explanations may not match the file selected in Data readiness.')
         rows = explain(run)
-        top = pd.DataFrame(rows[:10]).set_index('feature')
-        st.bar_chart(top['importance'])
+        labels = pd.DataFrame(rows)
+        labels['feature'] = labels['feature'].str.replace('numbers__', '', regex=False).str.replace('type__Type_', 'Product type ', regex=False)
+        chart = alt.Chart(labels.head(10)).mark_bar(color='#087f78').encode(
+            x=alt.X('importance:Q', title='Model importance score'),
+            y=alt.Y('feature:N', title=None, sort='-x', axis=alt.Axis(labelLimit=230)),
+            tooltip=[alt.Tooltip('feature:N', title='Input'), alt.Tooltip('importance:Q', title='Score', format='.4f')],
+        ).properties(height=420)
+        st.altair_chart(chart, use_container_width=True)
         with st.expander('View all approved-feature contributions'):
-            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
-        st.caption('Higher bars mean the model relied on that reading more when separating its training examples. This describes the model, not the machine.')
+            st.dataframe(labels.rename(columns={'feature': 'Input', 'importance': 'Model importance score'}), hide_index=True, use_container_width=True)
+        st.caption(explanation_note(run))
     else:
         st.write('Run the data check and model comparison first.')

@@ -30,6 +30,12 @@ from core import (
 APP_PATH = Path(__file__).parent / 'app.py'
 MODELS_DIR = APP_PATH.parent / 'models'
 
+@pytest.fixture(autouse=True)
+def isolated_saved_runs(tmp_path, monkeypatch):
+    """AppTest must never write into or clean up the user's models directory."""
+    monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
+    monkeypatch.setattr(__import__(__name__), 'MODELS_DIR', tmp_path)
+
 
 def _remove_test_saves(preexisting):
     """Delete only saved runs this test created. Never touch the user's own saved runs."""

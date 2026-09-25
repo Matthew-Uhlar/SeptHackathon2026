@@ -1,4 +1,9 @@
 @echo off
 cd /d "%~dp0"
-".venv\Scripts\python.exe" -m streamlit run app.py --server.address 127.0.0.1 --browser.gatherUsageStats false
+if not exist ".venv\Scripts\python.exe" (
+    echo SignalReady needs its local Python environment. Follow the setup steps in README.md.
+    pause
+    exit /b 1
+)
+".venv\Scripts\python.exe" -m streamlit run app.py --server.address 127.0.0.1 --browser.gatherUsageStats false %*
 pause
