@@ -1,6 +1,23 @@
 # SignalReady handoff to Codex
 
-Updated September 25 2026 by Claude (cloud session). This supersedes the status sections of CLAUDE_HANDOFF_CURRENT.md. Product rules / model rules / cautions in that file remain in force. This is a live checkpoint that is rewritten at each stable milestone because a usage limit can end the session without warning.
+Updated September 25 2026 by Claude (cloud session). This supersedes the status sections of CLAUDE_HANDOFF_CURRENT.md. Product rules / model rules / cautions in that file remain in force. Rewritten at each stable milestone because a usage limit can end the session without warning.
+
+## Current state (commit 3c9ee9b, branch claude/jolly-fermi-9zawua == master)
+
+- FEATURES ARE FROZEN. Deadline Sep 27 2026 4:59 PM Central (PROPOSAL_CRITERIA.md has the official rules / judging weights / submission items).
+- Full suite on Linux (Python 3.11.15, pinned requirements): 252 passed / 1 skipped. The skipped test is the opt-in browser check (SIGNALREADY_BROWSER_TESTS=1 with Playwright + Chromium); it passed when enabled. Do not export SIGNALREADY_MODEL_DIR when running the full suite.
+- App: data readiness (checks / correction table / outcome balance / answer-giveaway info line + evidence expander / column profile) -> model comparison (table / plain-language summary / six completion checks in a st.table / saved-run comparison) -> prediction (uncalibrated score + band + what-if table / batch CSV scoring) -> explanation chart. Train / save / reload / clear are button callbacks (B1 fix: a mid-script st.rerun left a stale second tab bar). Deploy toolbar hidden via .streamlit/config.toml.
+- Deliverables: PROJECT_SUMMARY.md / TECHNICAL_DOCUMENTATION.md / README.md / DEMO_SCRIPT.md / DEMO_GUIDE.md / SUBMISSION_CHECKLIST.md / THIRD_PARTY_NOTICES.md / COMPLIANCE_REVIEW.md / RESULTS_SUMMARY.md / LICENSE (Apache 2.0) + NOTICE / demo/SignalReady_demo.mp4 (4:29 captioned, no voice, produced by demo/record_demo.py).
+- Reviews: QUALITY_REVIEW_PHASE2.md (no P1; all P2 fixed; Q14 duplicate messages for one empty cell NOT fixed) and TEST_REPORT.md (B1-B8 fixed; UX items 6-10 open, see its Resolution section).
+
+## If you continue
+
+1. Do not add features. Only fix defects with a regression test. After any code change: rerun the suite / `python make_results_summary.py` / re-record the video with `python demo/record_demo.py --chromium <path>` if visible text changed / update test counts in TECHNICAL_DOCUMENTATION / SUBMISSION_CHECKLIST / COMPLIANCE_REVIEW / fast-forward master.
+2. Windows verification is still open: `.venv\Scripts\python -m pytest -q` and one walk through SUBMISSION_CHECKLIST.md's final verification list.
+3. Owner-only items (Matt): repo visibility for judges / registration and eligibility (enrolled US student, solo entry accepted) / optional voiceover / AI-assistance disclosure decision (wording in COMPLIANCE_REVIEW.md) / portal upload before the deadline.
+4. Stage explicit paths when committing. Agents shared the folder and `git commit -a` once swept in another team's files.
+
+## History
 
 ## Where the work lives
 
