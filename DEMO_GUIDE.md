@@ -1,6 +1,6 @@
 # SignalReady demonstration
 
-Target length: about four minutes. This is a presentation outline rather than a measured human delivery time.
+Target length: about four minutes. This is a presentation outline rather than a measured human delivery time. DEMO_SCRIPT.md turns this outline into a word-for-word narration with a shot list.
 
 ## Before recording
 
@@ -12,11 +12,11 @@ Explain the problem: a high model score can conceal missed failures or a column 
 
 ## 45 to 90 seconds
 
-Choose Included sample. Show the six approved inputs and the excluded failure-mode columns. Point out the outcome balance line showing how rare failures are. Click Check and compare models. Explain that training uses 60 percent of the rows while model selection and final evaluation each use a separate 20 percent.
+Choose Included sample. Show the six approved inputs and the excluded failure-mode columns. Point out the outcome balance line showing how rare failures are. Click Check and compare models. The app opens Model comparison when it finishes. Explain that training uses 60 percent of the rows while model selection and final evaluation each use a separate 20 percent.
 
 ## 90 to 150 seconds
 
-Open Model comparison. Explain the actual displayed counts of failures found and failures missed alongside false alarms. Compare them with Always no failure. The selection group chooses the winner before the app evaluates the final group. Download the readable report.
+On Model comparison explain the actual displayed counts of failures found and failures missed alongside false alarms. Compare them with Always no failure. The selection group chooses the winner before the app evaluates the final group. Download the readable report.
 
 Do not quote results from an old report. Encoder changes and library versions can change measured results. Use the values displayed by the run being demonstrated.
 
@@ -33,8 +33,10 @@ Close by stating that this is a local guided modeling studio using generated equ
 ## Submission items still requiring the owner
 
 - Record the demo video.
-- Confirm current portal requirements and deadline.
-- Provide participant details and a repository URL if the portal requires them.
+- Confirm current portal requirements and deadline (treat Sep 27 2026 4:59 PM Central as the deadline).
+- Provide participant details and a repository URL. The GitHub repository was private on September 25 2026 so judges need access.
 - Upload the final files to the event portal.
+
+SUBMISSION_CHECKLIST.md tracks each item with its status.
 
 Creating a rule-based recommendation does not by itself establish autonomous agent behavior. The current demo should use the guided-studio description.
