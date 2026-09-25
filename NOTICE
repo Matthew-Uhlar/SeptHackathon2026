@@ -1,0 +1,13 @@
+SignalReady
+Copyright 2026 Matt Uhlar
+
+This product is licensed under the Apache License Version 2.0. See the LICENSE file.
+
+The file data/ai4i2020.csv is NOT covered by the Apache License. It is the
+AI4I 2020 Predictive Maintenance Dataset by Stephan Matzka (2020) from the UCI
+Machine Learning Repository (https://doi.org/10.24432/C5HS5C). It is
+redistributed unmodified under the Creative Commons Attribution 4.0
+International License (https://creativecommons.org/licenses/by/4.0/).
+
+Third-party Python packages are installed separately from PyPI and keep their
+own licenses. They are listed in THIRD_PARTY_NOTICES.md.

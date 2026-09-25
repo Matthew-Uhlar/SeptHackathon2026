@@ -106,6 +106,10 @@ License: CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
 
 The included sample preserves the original downloaded file without changes. Its equipment readings are synthetic. Cleaning occurs only in memory during the training workflow. data/bad_sample.csv uses the same column layout with values written for this project. Attribution for every open-source dependency is in THIRD_PARTY_NOTICES.md.
 
+## License
+
+SignalReady's source code is licensed under the Apache License 2.0. See LICENSE and NOTICE. Apache 2.0 was chosen because it is permissive like the project's dependencies and adds an explicit patent grant that industrial adopters expect. The included dataset file data/ai4i2020.csv is not covered by that license and remains under CC BY 4.0 as described above.
+
 ## Tests
 
 ```powershell

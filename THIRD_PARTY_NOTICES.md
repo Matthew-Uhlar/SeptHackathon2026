@@ -23,7 +23,7 @@ License information below was read from the package metadata of the versions ins
 
 Suggested citation: Matzka S. (2020). AI4I 2020 Predictive Maintenance Dataset [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5HS5C
 
-The dataset is provided by its creator as-is under CC BY 4.0. Its creator and UCI do not endorse SignalReady. The readings are synthetic and were generated to reflect real predictive maintenance data. The CC BY 4.0 license of this file is not changed by any license chosen for the SignalReady source code.
+The dataset is provided by its creator as-is under CC BY 4.0. Its creator and UCI do not endorse SignalReady. The readings are synthetic and were generated to reflect real predictive maintenance data. The CC BY 4.0 license of this file is not changed by the Apache 2.0 license of the SignalReady source code (see LICENSE and NOTICE).
 
 data/bad_sample.csv is not a copy of UCI rows. It uses the same column names so the checks can be demonstrated. Its 56 readings were written for this project. None of its reading combinations match a row in data/ai4i2020.csv.
 

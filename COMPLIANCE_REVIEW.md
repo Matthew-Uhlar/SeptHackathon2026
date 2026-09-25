@@ -15,8 +15,8 @@ Items marked **Owner** need Matt. Items marked **Coordinator** need the person i
 | 5 | Late integration churn | Three new modules are being wired in two days before the deadline. Docs could describe features the app does not show. Untested wiring could break the demo. | Freeze features at a set time. Rerun the full suite. Update the marked doc sections only after wiring. Run the final verification list in SUBMISSION_CHECKLIST.md. | Coordinator |
 | 6 | "Original work during the hackathon period" is only partly evidenced by git | Every commit through 132878c is dated September 25 2026. The first commit is a "Baseline snapshot before continued development" that already holds a working app and tests. Git cannot show when that baseline was written. | Be ready to state when the baseline code was written (it must be after the event began). Keep any earlier local files or notes. | Owner |
 | 7 | AI-assistance disclosure | The captured rules are silent on AI coding tools. The public history lists "Claude" as the author of several commits. Internal review and handoff notes in the repository discuss AI agents. | Decide whether to add a short disclosure. Suggested wording below. Check the full terms on the portal for any AI rule. | Owner |
-| 8 | Dataset credit in the app omits the creator | CC BY 4.0 asks for the creator's name. The docs now include it. The sidebar line at app.py:25 does not. | Add the creator to the sidebar credit (suggested text below). | Coordinator |
-| 9 | No code license | Not a stated requirement. Without one the code is all rights reserved and others cannot reuse it. | Choose an option below or knowingly leave it. | Owner |
+| 8 | Dataset credit in the app omits the creator | Resolved in commit 64e5d4f. The sidebar now names S. Matzka. | None. | Done |
+| 9 | Code license | Resolved. Apache 2.0 added as LICENSE with a NOTICE that excludes the CC BY 4.0 dataset. | Owner checks the portal's IP terms for any conflict. | Done |
 | 10 | Deadline mismatch | Header says Sep 27 4:59 PM Central. The timeline graphic says Sep 28. | Plan for Sep 27. | Owner |
 
 ## Official rules
@@ -34,9 +34,9 @@ Items marked **Owner** need Matt. Items marked **Coordinator** need the person i
 | Eligibility: currently enrolled US college or university student | Owner check | Not verifiable from the repository. | Confirm. |
 | Team size 1 to 5 / individual participation per ABB's final criteria | Owner check | Solo build. | Confirm solo entries are accepted. |
 
-### Code license options (Owner decision)
+### Code license (decided: Apache 2.0)
 
-No LICENSE file was created. Check the hackathon's full terms for any rule about intellectual property ownership before choosing.
+Matt asked the coordinator to research and choose a license. Apache 2.0 was selected: it is permissive like every dependency / matches Streamlit's license / adds an explicit patent grant and patent-retaliation clause that corporate legal teams look for when judging real-world adoption. The owner keeps the copyright. LICENSE holds the unmodified standard text (MD5 3b83ef96387f14655fc854ddc3c6bd57). NOTICE states the copyright and that data/ai4i2020.csv stays under CC BY 4.0. The owner should still check the portal's full IP terms. The options considered were:
 
 | Option | Effect | Fit |
 |---|---|---|
