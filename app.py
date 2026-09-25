@@ -69,13 +69,17 @@ if fingerprint != st.session_state.get('input_hash'):
 
 if st.session_state.get('reload_error'):
     st.error(st.session_state.reload_error)
-if st.session_state.get('save_notice'):
-    st.success(st.session_state.pop('save_notice'))
+if st.session_state.get('notice'):
+    st.success(st.session_state.pop('notice'))
 active_run = st.session_state.get('run')
 if active_run:
     st.caption('Active model: ' + active_run['winner'] + ' · dataset ' + active_run['fingerprint'][:12])
 # A stable key keeps the open tab when a rerun adds elements above it, such as after saving.
-data_tab, results_tab, prediction_tab, explain_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model'], key='active_tab', on_change='rerun')
+TAB_LABELS = ['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model']
+# A tab can only be switched before the tabs render so actions request it for the next run.
+if st.session_state.get('switch_tab') in TAB_LABELS:
+    st.session_state.active_tab = st.session_state.pop('switch_tab')
+data_tab, results_tab, prediction_tab, explain_tab = st.tabs(TAB_LABELS, key='active_tab', on_change='rerun')
 with data_tab:
     st.header('Is the data ready?')
     if raw:
@@ -122,7 +126,9 @@ with data_tab:
                         st.session_state.run = train(df, source_label=source_label)
                         st.session_state.loaded = False
                         st.session_state.pop('reload_error', None)
-                    st.success('Comparison ready. Open the Model comparison tab.')
+                    st.session_state.notice = 'Comparison ready. Showing the Model comparison tab.'
+                    st.session_state.switch_tab = TAB_LABELS[1]
+                    st.rerun()
                 except ValueError as exc:
                     st.error('The comparison could not complete: ' + str(exc))
     else:
@@ -157,7 +163,7 @@ with results_tab:
             try:
                 saved_path = save_run(run, MODEL_DIR)
                 st.session_state.latest_save = saved_path
-                st.session_state.save_notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
+                st.session_state.notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
                 st.rerun()
             except OSError:
                 st.error('The run could not be saved. Check that the local model folder is writable and try again.')

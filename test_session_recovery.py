@@ -62,3 +62,14 @@ def test_second_save_selects_newest_run_and_keeps_first(tmp_path, monkeypatch):
     picker = next(s for s in app.sidebar.selectbox if s.label == 'Saved local runs')
     assert picker.value == (saved - first).pop()
     assert len(picker.options) == 2
+
+def test_training_switches_to_model_comparison_with_notice(tmp_path, monkeypatch):
+    monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
+    app = AppTest.from_file(str(APP)).run(timeout=30)
+    next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
+    assert not app.exception
+    assert app.session_state['active_tab'] == '2  Model comparison'
+    assert 'switch_tab' not in app.session_state
+    assert any('Comparison ready' in s.value for s in app.success)
+    app.run()
+    assert not any('Comparison ready' in s.value for s in app.success)
