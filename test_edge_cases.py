@@ -31,6 +31,13 @@ APP_PATH = Path(__file__).parent / 'app.py'
 MODELS_DIR = APP_PATH.parent / 'models'
 
 
+def _remove_test_saves(preexisting):
+    """Delete only saved runs this test created. Never touch the user's own saved runs."""
+    for f in MODELS_DIR.glob('*.joblib'):
+        if f not in preexisting:
+            f.unlink(missing_ok=True)
+
+
 @pytest.fixture(scope='module')
 def sample():
     return pd.read_csv(Path(__file__).parent / 'data/ai4i2020.csv')
@@ -237,6 +244,7 @@ def _trained_app():
 
 
 def test_model_comparison_tab_shows_winner_and_metrics_after_training():
+    preexisting = set(MODELS_DIR.glob('*.joblib'))
     app = _trained_app()
     run_obj = app.session_state['run']
     comparison_tab = app.tabs[1]
@@ -248,6 +256,7 @@ def test_model_comparison_tab_shows_winner_and_metrics_after_training():
 
 
 def test_download_json_report_matches_public_report():
+    preexisting = set(MODELS_DIR.glob('*.joblib'))
     app = _trained_app()
     run_obj = app.session_state['run']
     raw = _get_download_button_bytes(app, 'Download results report')
@@ -261,6 +270,7 @@ def test_download_json_report_matches_public_report():
 
 
 def test_reload_saved_model_restores_tab_content_without_retraining():
+    preexisting = set(MODELS_DIR.glob('*.joblib'))
     app = _trained_app()
     trained_run = app.session_state['run']
     next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
@@ -281,9 +291,12 @@ def test_reload_saved_model_restores_tab_content_without_retraining():
         comparison_tab = reloaded_app.tabs[1]
         assert comparison_tab.subheader[0].value == 'Selected model: ' + trained_run['winner']
         assert any('saved run' in info.value for info in comparison_tab.info)
+        prediction_tab = reloaded_app.tabs[2]
+        assert any('saved run' in info.value for info in prediction_tab.info), (
+            'the prediction tab must also disclose that a saved run is in use'
+        )
     finally:
-        for f in MODELS_DIR.glob('*.joblib'):
-            f.unlink(missing_ok=True)
+        _remove_test_saves(preexisting)
 
 
 def test_changing_data_source_after_reload_keeps_loaded_run():
@@ -302,6 +315,7 @@ def test_changing_data_source_after_reload_keeps_loaded_run():
     is bug-free UX, only that it matches the documented guard and that the
     app does not crash or silently mix data from two different sources.
     """
+    preexisting = set(MODELS_DIR.glob('*.joblib'))
     app = _trained_app()
     trained_run = app.session_state['run']
     next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
@@ -339,6 +353,9 @@ def test_changing_data_source_after_reload_keeps_loaded_run():
         # trained on the currently selected data source.
         comparison_tab = reloaded_app.tabs[1]
         assert any('saved run' in info.value for info in comparison_tab.info)
+        prediction_tab = reloaded_app.tabs[2]
+        assert any('saved run' in info.value for info in prediction_tab.info), (
+            'the prediction tab must also disclose that a saved run is in use'
+        )
     finally:
-        for f in MODELS_DIR.glob('*.joblib'):
-            f.unlink(missing_ok=True)
+        _remove_test_saves(preexisting)

@@ -103,3 +103,26 @@ def test_bad_sample_fixture_is_flawed():
     report = check_data(bad)
     assert report['errors']
     assert report['duplicates'] >= 1
+
+
+def test_bom_csv_parses():
+    raw = (Path(__file__).parent/'data/ai4i2020.csv').read_bytes()
+    if not raw.startswith(b'\xef\xbb\xbf'):
+        raw = b'\xef\xbb\xbf' + raw
+    df = read_csv(raw)
+    assert df.columns[0] == 'UDI'
+    assert not check_data(df)['errors']
+
+def test_run_label_is_readable(tmp_path):
+    from core import run_label
+    f = tmp_path/'0123456789abcdef.joblib'; f.write_bytes(b'x')
+    label = run_label(f)
+    assert label.startswith('Run 01234567') and 'saved' in label
+
+def test_no_failure_prediction_is_not_green():
+    from streamlit.testing.v1 import AppTest
+    app=AppTest.from_file(str(Path(__file__).parent/'app.py')).run(timeout=30)
+    next(b for b in app.button if b.label=='Check and compare models').click().run(timeout=60)
+    next(b for b in app.button if b.label=='Check these readings').click().run()
+    assert not app.exception
+    assert not any('does not flag' in s.value for s in app.success)

@@ -6,7 +6,7 @@ Supersedes the status sections of `CLAUDE_HANDOFF.md`. Read that file too for pr
 ## Status at a glance
 
 - Git repo initialized in this folder. Branch `master`. Work is committed in small steps. Run `git log --oneline` to see where things stand.
-- Test suite: **43 passed** (15 original + 4 feature tests + 24 edge-case tests). See the caution under "Verification gap" below.
+- Test suite: **46 passed** (15 original + 4 feature tests + 24 edge-case tests + 3 review-fix tests). See the caution under "Verification gap" below.
 - `QUALITY_REVIEW.md` holds an independent review of the pre-change code. Its quick fixes are tracked in "Open work" below.
 
 ## What was done this session
@@ -31,16 +31,20 @@ Three parallel teams worked in the same folder with separate file ownership.
 - Covers malformed CSV and non-UTF-8 CSV and empty files. Multiple missing columns. Empty and nonnumeric values. Invalid Type labels. Row count and class size limits. Below-range and multi-column out-of-range predictions. `public_report` on a reloaded run. Streamlit tab state after training and reload. JSON download content. Changing the data source after a reload.
 - No product bugs found. Behavior to know: after a saved run is reloaded, switching the data source keeps the loaded run. This is intentional and labeled in the results tab.
 
+## Also fixed after the teams finished
+
+- `test_edge_cases.py` cleanup used to delete every `.joblib` in `models/`. Run in the real folder that would have wiped Matt's own saved runs. It now deletes only files the test created. Verified with a stand-in saved run that survived the full suite.
+
 ## Open work (in priority order)
 
 Check `git log` first. Items marked DONE below were finished after this file was first written.
 
 1. Quality-review quick fixes:
-   - [ ] Prediction tab: no-failure result uses `st.info` rather than `st.success`.
-   - [ ] Prediction tab: show a saved-run disclosure when `loaded` is true.
-   - [ ] Saved-run picker: human-readable label with save time.
-   - [ ] Regression test for a UTF-8 BOM CSV.
-   - [ ] Add `.venv-ci/` to `.gitignore` (leftover folder that could not be deleted from the Linux bridge; delete it on Windows).
+   - [x] DONE: Prediction tab: no-failure result uses `st.info` rather than `st.success`.
+   - [x] DONE: Prediction tab: show a saved-run disclosure when `loaded` is true.
+   - [x] DONE: Saved-run picker: human-readable label with save time (`core.run_label`).
+   - [x] DONE: Regression test for a UTF-8 BOM CSV.
+   - [x] DONE: Added `.venv-ci/` to `.gitignore`. The empty leftover folder could not be deleted from the Linux bridge. Delete it on Windows.
 2. **Decision needed from Matt:** how to answer the "agentic" part of Theme 1. Option A is to reframe README and pitch as a tool-assisted studio where a person approves each step for trust and auditability. Option B is one small rule-based recommendation step after the comparison. Do not build Option B without Matt's approval. Keep it rule based with no new dependencies if approved.
 3. Verify on Windows with the pinned `requirements.txt` (see Verification gap).
 4. Verify `Start SignalReady.bat` on a clean Windows machine and time the five-minute demo from `CLAUDE_HANDOFF.md`.

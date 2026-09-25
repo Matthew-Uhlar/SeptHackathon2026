@@ -2,6 +2,7 @@
 import hashlib
 import io
 import json
+from datetime import datetime
 from pathlib import Path
 
 import joblib
@@ -111,6 +112,12 @@ def save_run(run, folder):
     joblib.dump(run, temp)
     temp.replace(target)
     return target
+
+def run_label(path):
+    """Readable name for a saved run in the sidebar picker."""
+    path = Path(path)
+    saved = datetime.fromtimestamp(path.stat().st_mtime)
+    return f'Run {path.stem[:8]} · saved {saved:%Y-%m-%d %H:%M}'
 
 def public_report(run):
     return {k: v for k, v in run.items() if k not in ['model', 'split_indices']}

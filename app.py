@@ -4,7 +4,7 @@ import json
 import joblib
 import pandas as pd
 import streamlit as st
-from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report
+from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label
 
 ROOT = Path(__file__).parent
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
@@ -23,7 +23,7 @@ with st.sidebar:
     saved = sorted((ROOT / 'models').glob('*.joblib')) if (ROOT / 'models').exists() else []
     if saved:
         st.caption('PROTOTYPE — generated data, not a live equipment connection.')
-        choice = st.selectbox('Saved local runs', saved, format_func=lambda x: x.stem)
+        choice = st.selectbox('Saved local runs', saved, format_func=run_label)
         if st.button('Reload saved model'):
             try:
                 st.session_state.run = joblib.load(choice)
@@ -119,6 +119,8 @@ with prediction_tab:
     st.header('Try a set of readings')
     if run:
         st.caption('Using ' + run['winner'] + ' from dataset ' + run['fingerprint'][:12])
+        if st.session_state.get('loaded'):
+            st.info('This is a saved run. It was trained on its original dataset. It may not match the file selected in Data readiness.')
         with st.form('prediction'):
             row={'Type':st.selectbox('Product quality type',['L','M','H'])}
             defaults=[300.,310.,1500.,40.,100.]
@@ -131,7 +133,7 @@ with prediction_tab:
             if outside:
                 st.warning('Outside the training range: '+', '.join(outside)+'. This model may be unreliable for these readings.')
             if outcome: st.warning('The model flags a failure pattern in these readings.')
-            else: st.success('The model does not flag a failure pattern in these readings.')
+            else: st.info('The model does not flag a failure pattern in these readings.')
             st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
             st.caption('PROTOTYPE — generated data, not a live equipment connection.')
     else: st.write('Train or reload a saved model to try a prediction.')
