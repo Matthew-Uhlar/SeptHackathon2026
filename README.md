@@ -24,7 +24,7 @@ python -m venv .venv
 ## Demo
 
 1. Select the included sample, or select Try a flawed sample to see a small built-in file with a missing reading and a repeated example.
-2. Review the data-readiness report. IDs and failure-type labels are excluded. The flawed sample shows how blocking errors and warnings appear before training is allowed.
+2. Review the data-readiness report. IDs and failure-type labels are excluded. The flawed sample shows how blocking errors and warnings appear before training is allowed. A correction table lists up to 20 problem cells by data row and column without repeating their values. The outcome balance line counts failure and no-failure examples after repeats are removed.
 3. Choose Check and compare models.
 4. Open Model comparison to inspect missed failures and false alarms. A PROTOTYPE label near the results is a reminder that this uses generated data rather than a live equipment connection.
 5. Download the results report as JSON or as a plain-text readable report with the same fingerprint, model choice, split sizes, metrics and a limitations paragraph.

@@ -74,7 +74,8 @@ if st.session_state.get('save_notice'):
 active_run = st.session_state.get('run')
 if active_run:
     st.caption('Active model: ' + active_run['winner'] + ' · dataset ' + active_run['fingerprint'][:12])
-data_tab, results_tab, prediction_tab, explain_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model'])
+# A stable key keeps the open tab when a rerun adds elements above it, such as after saving.
+data_tab, results_tab, prediction_tab, explain_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model'], key='active_tab', on_change='rerun')
 with data_tab:
     st.header('Is the data ready?')
     if raw:

@@ -1,5 +1,7 @@
 # Development checkpoint
 
+> Later update: Claude finished the first-save refresh and data correction guidance items. See CODEX_HANDOFF_CURRENT.md for the current checkpoint.
+
 Updated September 25 2026 by Codex.
 
 ## Verified baseline

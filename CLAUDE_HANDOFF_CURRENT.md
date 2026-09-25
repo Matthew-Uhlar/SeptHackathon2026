@@ -1,5 +1,7 @@
 # SignalReady handoff to Claude
 
+> Superseded: CODEX_HANDOFF_CURRENT.md (September 25 2026) records later Claude work. The first-save refresh and data correction guidance items below are finished there with 110 tests passing on Linux.
+
 Updated September 25 2026 by Codex. This supersedes the status sections in CLAUDE_HANDOFF.md and CODEX_HANDOFF.md. This is a live checkpoint.
 
 ## Product and constraints

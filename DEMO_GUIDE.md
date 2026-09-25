@@ -8,11 +8,11 @@ Start the app using Start SignalReady.bat. Confirm that the sample data loads. K
 
 ## 0 to 45 seconds
 
-Explain the problem: a high model score can conceal missed failures or a column that gives away the answer. Choose Try a flawed sample. Show the missing-reading error and repeated-example warning. Point out that training is blocked until required values are corrected.
+Explain the problem: a high model score can conceal missed failures or a column that gives away the answer. Choose Try a flawed sample. Show the missing-reading error and repeated-example warning. Open Where to correct the file to show the data row and column that need fixing. Point out that training is blocked until required values are corrected.
 
 ## 45 to 90 seconds
 
-Choose Included sample. Show the six approved inputs and the excluded failure-mode columns. Click Check and compare models. Explain that training uses 60 percent of the rows while model selection and final evaluation each use a separate 20 percent.
+Choose Included sample. Show the six approved inputs and the excluded failure-mode columns. Point out the outcome balance line showing how rare failures are. Click Check and compare models. Explain that training uses 60 percent of the rows while model selection and final evaluation each use a separate 20 percent.
 
 ## 90 to 150 seconds
 
