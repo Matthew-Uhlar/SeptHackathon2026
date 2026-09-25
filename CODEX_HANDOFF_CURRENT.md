@@ -35,14 +35,14 @@ Updated September 25 2026 by Claude (cloud session). This supersedes the status 
 - Optional agentic or rule-based recommendation direction still needs Matt's answer. Do not implement without it.
 - Possible polish (not started): after training the success message asks the user to open Model comparison. With the keyed tabs the app could switch there automatically by setting `st.session_state.active_tab` before the tabs render. Leave it unless Matt wants it.
 
-## Planned next round (not started)
+## Team round (in progress)
 
-Matt asked for three development teams plus a quality team and a testing team with Claude overseeing. PROPOSAL_CRITERIA.md holds the idea-phase deck content. Claude is waiting for a PDF copy of the HackerEarth challenge page because the cloud environment blocks that site. Planned features map to the deck:
+Matt asked for three development teams plus a quality team and a testing team with Claude overseeing. PROPOSAL_CRITERIA.md holds the idea-phase deck content. Matt supplied a PDF of the HackerEarth page. Its rules / judging weights / submission items / Theme 1 list are now in PROPOSAL_CRITERIA.md. Deadline: Sep 27 4:59 PM Central (the page's timeline graphic says Sep 28). Three development agents were launched in the background with strict new-file ownership. If this handoff still says in progress, check whether their files exist and whether their tests pass before integrating:
 
-- Team A: answer-giveaway column check for excluded columns (slide 2). New leakage.py with tests.
-- Team B: prepared plain-language results summary (slides 6 and 11). New narrative.py with tests plus a script that writes RESULTS_SUMMARY.md.
-- Team C: in-app completion checks and repeat-run verification (slides 8 and 10). New completion_checks.py with tests.
-- Coordinator integrates the modules into app.py and writes PROJECT_SUMMARY.md.
+- Team A: profiling.py + test_profiling.py: profile_columns / answer_giveaway_columns / saved_run_table (experiment tracking).
+- Team B: narrative.py / completion_checks.py / make_results_summary.py -> RESULTS_SUMMARY.md plus tests.
+- Team C: inference.py + test_inference.py: model_score with an uncalibrated-score note / what_if per-prediction sensitivity / score_batch for CSV scoring.
+- Coordinator integrates the modules into app.py. PROJECT_SUMMARY.md and TECHNICAL_DOCUMENTATION.md (submission items 1 and 5) are drafted. Update their module map after integration.
 - Quality team reviews against PROPOSAL_CRITERIA.md and the official rules. Testing team adds test_acceptance.py and TEST_REPORT.md.
 
 Stay within the guided-studio framing. The deck says the user stays in control and rules out a separate chatbot.
