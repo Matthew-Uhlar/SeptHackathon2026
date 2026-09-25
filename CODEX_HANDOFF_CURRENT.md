@@ -48,6 +48,15 @@ Matt asked for three development teams plus a quality team and a testing team wi
 
 Stay within the guided-studio framing. The deck says the user stays in control and rules out a separate chatbot.
 
+## Dev team results (committed 982cd8b, NOT yet wired into app.py)
+
+- profiling.py: profile_columns(df) / answer_giveaway_columns(df) (flags TWF HDF PWF OSF at strength 1.0; UDI / Product ID / RNF not flagged) / saved_run_table(folder).
+- narrative.py: results_summary(run) -> list[str]. completion_checks.py: completion_checks(df, run, repeat=True) -> six checks with Passed True/False/None (about 1.7 s with repeat). make_results_summary.py writes RESULTS_SUMMARY.md.
+- inference.py: model_score / score_band(score, flag) / SCORE_NOTE / what_if / WHAT_IF_NOTE / score_batch(run, df) / batch_summary. Batch validation duplicates core.predict rules in `_row_problems`; update both if core changes.
+- All AppTest instances use default_timeout=60 (3-second default failed under load). Full suite 188 passed on Linux.
+- Also done: Apache 2.0 LICENSE + NOTICE. master fast-forwarded to the branch at Matt's request (keep master in sync at verified milestones). demo/record_demo.py produces a captioned MP4. demo/SignalReady_demo.mp4 is an interim recording of the pre-integration UI; re-record after integration.
+- Next: integrate into app.py (Data readiness: giveaway warnings + profile expander; Model comparison: narrative + completion checks button + saved-run table; Try a prediction: score / band / what-if + batch CSV scoring). Then update docs at `<!-- COORDINATOR` markers / re-record video / quality + testing teams.
+
 ## Team 4 results (committed 7984413 and 64e5d4f)
 
 - Deliverables: PROJECT_SUMMARY / TECHNICAL_DOCUMENTATION / README / DEMO_GUIDE updated. New DEMO_SCRIPT / SUBMISSION_CHECKLIST / THIRD_PARTY_NOTICES / COMPLIANCE_REVIEW.
