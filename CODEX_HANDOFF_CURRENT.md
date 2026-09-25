@@ -48,7 +48,13 @@ Matt asked for three development teams plus a quality team and a testing team wi
 
 Stay within the guided-studio framing. The deck says the user stays in control and rules out a separate chatbot.
 
-## Dev team results (committed 982cd8b, NOT yet wired into app.py)
+## Integration (commit 6d7058b): modules wired into app.py. Full suite 192 passed.
+
+Completion checks run in a button callback so the keyed expander (key checks_open) stays open. Saved-run table is cached on file names + mtimes. data/new_readings.csv is an original 31-row batch demo file.
+
+In progress after 6d7058b: quality team (writes QUALITY_REVIEW_PHASE2.md) / testing team (writes test_acceptance.py + TEST_REPORT.md) / Team 4 updating docs at COORDINATOR markers / coordinator re-recording demo/SignalReady_demo.mp4 with the new features. Act on their findings next.
+
+## Dev team results (committed 982cd8b)
 
 - profiling.py: profile_columns(df) / answer_giveaway_columns(df) (flags TWF HDF PWF OSF at strength 1.0; UDI / Product ID / RNF not flagged) / saved_run_table(folder).
 - narrative.py: results_summary(run) -> list[str]. completion_checks.py: completion_checks(df, run, repeat=True) -> six checks with Passed True/False/None (about 1.7 s with repeat). make_results_summary.py writes RESULTS_SUMMARY.md.

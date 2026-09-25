@@ -92,14 +92,14 @@ The solution could include the following. Current SignalReady coverage is noted 
 
 | Theme item | SignalReady status |
 |---|---|
-| Automated dataset profiling and quality assessment | Data readiness checks / correction table / outcome balance. Column profiling and answer-giveaway detection planned. |
+| Automated dataset profiling and quality assessment | Data readiness checks / correction table / outcome balance / column profile / answer-giveaway column warnings (profiling.py). |
 | Intelligent task and model selection | Fixed rule: highest selection-group F1 picks between two models. |
 | Data preprocessing and feature engineering | Training-only scaling and fixed type encoding. No engineered features. |
 | Model training and evaluation | Seeded 60/20/20 split with an always-no-failure baseline. |
-| Explainable AI using feature importance and confidence scores | Global importance chart. Per-prediction explanation and an uncalibrated model score planned. |
-| Experiment tracking and model comparison | Two-model comparison plus saved runs with audit metadata. Saved-run comparison table planned. |
+| Explainable AI using feature importance and confidence scores | Global importance chart / per-prediction what-if table / model score labeled uncalibrated because it is not a probability (inference.py) / plain-language results summary (narrative.py). |
+| Experiment tracking and model comparison | Two-model comparison / saved runs with audit metadata / saved-run comparison table / live completion checks including a repeat run (completion_checks.py). |
 | One-click deployment of trained models | One-click local save and reload. No serving endpoint (proposal rules out a cloud service). |
-| Interactive prediction and inference dashboard | Single-reading form. Batch scoring of a CSV planned. |
+| Interactive prediction and inference dashboard | Single-reading form with score and what-if / batch scoring of an uploaded CSV with a downloadable result. |
 
 Suggested technologies: AI / ML / AutoML / MLOps / Python / FastAPI / MLflow / LangGraph / Docker / SHAP / LightGBM or XGBoost / PostgreSQL. SignalReady uses Python with scikit-learn / pandas / Streamlit.
 
