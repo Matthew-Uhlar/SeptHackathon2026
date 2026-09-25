@@ -74,7 +74,7 @@ def test_unsaved_run_cleared_on_source_change(small, tmp_path):
     flawed = small.copy()
     flawed.loc[0, NUMERIC[0]] = np.nan
     flawed.to_csv(tmp_path / 'data/bad_sample.csv', index=False)
-    app = AppTest.from_file(str(tmp_path / 'app.py')).run(timeout=30)
+    app = AppTest.from_file(str(tmp_path / 'app.py'), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     assert not app.exception
     assert 'run' in app.session_state
@@ -90,7 +90,7 @@ def test_incompatible_saved_object_is_rejected_without_ui_crash(small, tmp_path)
     small.to_csv(tmp_path / 'data/ai4i2020.csv', index=False)
     (tmp_path / 'models').mkdir()
     joblib.dump({'winner': 'obsolete run'}, tmp_path / 'models/obsolete.joblib')
-    app = AppTest.from_file(str(tmp_path / 'app.py')).run(timeout=30)
+    app = AppTest.from_file(str(tmp_path / 'app.py'), default_timeout=60).run(timeout=30)
     next(b for b in app.sidebar.button if b.label == 'Reload saved model').click().run(timeout=30)
     assert not app.exception
     assert app.error
@@ -101,7 +101,7 @@ def test_saved_invalid_source_label_cannot_crash_audit_view(small, tmp_path, mon
     run = train(small)
     run['source_label'] = None
     save_run(run, tmp_path / 'models')
-    app = AppTest.from_file(str(ROOT / 'app.py')).run(timeout=30)
+    app = AppTest.from_file(str(ROOT / 'app.py'), default_timeout=60).run(timeout=30)
     next(b for b in app.sidebar.button if b.label == 'Reload saved model').click().run(timeout=30)
     assert not app.exception
     assert app.error

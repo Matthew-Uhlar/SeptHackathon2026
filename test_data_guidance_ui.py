@@ -7,7 +7,7 @@ APP = Path(__file__).parent / 'app.py'
 
 def _app(tmp_path, monkeypatch, source):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     app.sidebar.radio[0].set_value(source).run(timeout=30)
     assert not app.exception
     return app

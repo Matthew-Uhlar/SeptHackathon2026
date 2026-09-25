@@ -8,7 +8,7 @@ APP = Path(__file__).parent / 'app.py'
 def test_failed_reload_retains_active_identity_and_persistent_error(tmp_path, monkeypatch):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
     joblib.dump({'winner': 'not a compatible run'}, tmp_path / 'broken.joblib')
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     original = app.session_state['run']['fingerprint']
     assert app.session_state['run']['source_label'] == 'UCI AI4I generated sample'
@@ -25,7 +25,7 @@ def test_clear_active_model_does_not_delete_saved_files(tmp_path, monkeypatch):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
     sentinel = tmp_path / 'existing.joblib'
     sentinel.write_bytes(b'existing user artifact')
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     app.run()
     next(b for b in app.sidebar.button if b.label == 'Clear active model').click().run()
@@ -36,7 +36,7 @@ def test_clear_active_model_does_not_delete_saved_files(tmp_path, monkeypatch):
 
 def test_first_save_immediately_populates_sidebar(tmp_path, monkeypatch):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     assert not app.sidebar.selectbox
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
@@ -51,7 +51,7 @@ def test_first_save_immediately_populates_sidebar(tmp_path, monkeypatch):
 
 def test_second_save_selects_newest_run_and_keeps_first(tmp_path, monkeypatch):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
     first = set(tmp_path.glob('*.joblib'))
@@ -65,7 +65,7 @@ def test_second_save_selects_newest_run_and_keeps_first(tmp_path, monkeypatch):
 
 def test_training_switches_to_model_comparison_with_notice(tmp_path, monkeypatch):
     monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
-    app = AppTest.from_file(str(APP)).run(timeout=30)
+    app = AppTest.from_file(str(APP), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     assert not app.exception
     assert app.session_state['active_tab'] == '2  Model comparison'

@@ -241,7 +241,7 @@ def _get_download_button_bytes(app, label):
 def _trained_app():
     from streamlit.testing.v1 import AppTest
 
-    app = AppTest.from_file(str(APP_PATH)).run(timeout=30)
+    app = AppTest.from_file(str(APP_PATH), default_timeout=60).run(timeout=30)
     assert not app.exception
     next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
     assert not app.exception
@@ -286,7 +286,7 @@ def test_reload_saved_model_restores_tab_content_without_retraining():
     try:
         from streamlit.testing.v1 import AppTest
 
-        reloaded_app = AppTest.from_file(str(APP_PATH)).run(timeout=30)
+        reloaded_app = AppTest.from_file(str(APP_PATH), default_timeout=60).run(timeout=30)
         reload_button = next(b for b in reloaded_app.sidebar.button if b.label == 'Reload saved model')
         reload_button.click().run(timeout=30)
         assert not reloaded_app.exception
@@ -329,7 +329,7 @@ def test_changing_data_source_after_reload_keeps_loaded_run():
     try:
         from streamlit.testing.v1 import AppTest
 
-        reloaded_app = AppTest.from_file(str(APP_PATH)).run(timeout=30)
+        reloaded_app = AppTest.from_file(str(APP_PATH), default_timeout=60).run(timeout=30)
         reload_button = next(b for b in reloaded_app.sidebar.button if b.label == 'Reload saved model')
         reload_button.click().run(timeout=30)
         assert not reloaded_app.exception

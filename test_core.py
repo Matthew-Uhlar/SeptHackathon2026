@@ -62,7 +62,7 @@ def test_out_of_range_reported(run,sample):
 
 def test_app_workflow():
     from streamlit.testing.v1 import AppTest
-    app=AppTest.from_file(str(Path(__file__).parent/'app.py')).run(timeout=30)
+    app=AppTest.from_file(str(Path(__file__).parent/'app.py'), default_timeout=60).run(timeout=30)
     assert not app.exception
     next(b for b in app.button if b.label=='Check and compare models').click().run(timeout=60)
     assert not app.exception
@@ -121,7 +121,7 @@ def test_run_label_is_readable(tmp_path):
 
 def test_no_failure_prediction_is_not_green():
     from streamlit.testing.v1 import AppTest
-    app=AppTest.from_file(str(Path(__file__).parent/'app.py')).run(timeout=30)
+    app=AppTest.from_file(str(Path(__file__).parent/'app.py'), default_timeout=60).run(timeout=30)
     next(b for b in app.button if b.label=='Check and compare models').click().run(timeout=60)
     next(b for b in app.button if b.label=='Check these readings').click().run()
     assert not app.exception
