@@ -15,14 +15,14 @@ st.markdown('''<style>.stApp{background:#f6f9fa}h1,h2,h3{color:#153b43}div[data-
 st.caption('MAINTENANCE DATA ASSISTANT')
 st.title('SignalReady')
 st.write('Check your equipment data. Compare models. Understand the mistakes.')
-st.info('The included samples use generated equipment data. Uploaded data has not been independently verified. Predictions identify failure patterns in readings. They do not predict when a real machine will break down.')
+st.info('The included samples use generated equipment data. Uploaded data has not been independently verified. Predictions flag readings that resemble failures labeled in the training data. They do not predict when a real machine will break down.')
 with st.sidebar:
     st.header('Your workspace')
     source = st.radio('Data source', ['Included sample', 'Upload a CSV', 'Try a flawed sample'])
     upload = st.file_uploader('Equipment readings', type=['csv']) if source == 'Upload a CSV' else None
     st.caption('Your data stays in this local app. Training requires the AI4I column format.')
     st.link_button('About the sample data', 'https://doi.org/10.24432/C5HS5C')
-    st.caption('AI4I 2020 dataset · UCI Machine Learning Repository · CC BY 4.0')
+    st.caption('AI4I 2020 dataset by S. Matzka · UCI Machine Learning Repository · CC BY 4.0')
     saved = sorted(MODEL_DIR.glob('*.joblib')) if MODEL_DIR.exists() else []
     if saved:
         st.caption('PROTOTYPE — no live equipment connection.')
@@ -198,7 +198,7 @@ with prediction_tab:
     else: st.write('Train or reload a saved model to try a prediction.')
 
 with explain_tab:
-    st.header('What drove the model\'s decisions?')
+    st.header('Which inputs did the model rely on most?')
     if run:
         st.caption('These scores come from the fitted model using its training examples. The explanation calculation does not use the selection or final-check groups. It does not show a physical cause of failure or a repair recommendation.')
         if st.session_state.get('loaded'):
