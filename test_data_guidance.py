@@ -45,3 +45,23 @@ def test_numeric_text_is_valid():
 def test_invalid_limit_rejected(limit):
     with pytest.raises(ValueError):
         data_issue_examples(frame(),limit)
+
+
+def test_class_balance_counts_unique_examples_like_training():
+    from core import class_balance
+    data = frame()
+    data.loc[5] = ['M', 301., 311., 1600., 50., 120., 1]
+    data.loc[6] = ['H', 302., 312., 1700., 55., 130., 'x']
+    assert class_balance(data) == {'No failure': 1, 'Failure': 1, 'Unusable labels': 1}
+    assert class_balance(data.astype(str)) == {'No failure': 1, 'Failure': 1, 'Unusable labels': 1}
+    assert class_balance(data.drop(columns=['Type'])) is None
+
+
+def test_sample_balance_matches_training_minimum_rule():
+    from pathlib import Path
+    from core import class_balance, read_csv
+    sample = read_csv((Path(__file__).parent / 'data/ai4i2020.csv').read_bytes())
+    balance = class_balance(sample)
+    assert balance['Unusable labels'] == 0
+    assert balance['Failure'] >= 10 and balance['No failure'] >= 10
+    assert balance['Failure'] < balance['No failure']

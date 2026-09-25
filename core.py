@@ -154,6 +154,20 @@ def data_issue_examples(df, limit=20):
                     return issues
     return issues
 
+def class_balance(df):
+    """Count outcomes among unique normalized examples, matching what training keeps.
+
+    Returns None when required columns are missing. Labels other than 0 or 1
+    are counted separately so they are not silently treated as either outcome.
+    """
+    if any(column not in df for column in FEATURES + [TARGET]):
+        return None
+    normalized = df[FEATURES + [TARGET]].copy()
+    normalized[NUMERIC + [TARGET]] = normalized[NUMERIC + [TARGET]].apply(pd.to_numeric, errors='coerce')
+    labels = normalized.drop_duplicates(subset=FEATURES + [TARGET])[TARGET]
+    no_failure, failure = int((labels == 0).sum()), int((labels == 1).sum())
+    return {'No failure': no_failure, 'Failure': failure, 'Unusable labels': int(len(labels) - no_failure - failure)}
+
 def metrics(y, predictions):
     tn, fp, fn, tp = confusion_matrix(y, predictions, labels=[0, 1]).ravel()
     return {'Failures found': int(tp), 'Failures missed': int(fn), 'False alarms': int(fp),

@@ -21,7 +21,9 @@ Anything listed here without a later "Done" entry below is unfinished. Check `gi
 
 ## Done by Claude
 
-(none yet)
+- `core.class_balance(df)` counts No failure / Failure / Unusable labels among unique normalized examples (same deduplication as training). Returns None when required columns are missing. Tests in test_data_guidance.py.
+- Data readiness tab now shows a "Where to correct the file" expander (up to 20 `data_issue_examples` rows: Data row / Column / Problem, never the cell value) plus an outcome balance line. Tests in test_data_guidance_ui.py.
+- test_session_recovery.py gained a second-save regression: the newest save becomes the picker selection and the first save is kept.
 
 ## Still open after Claude's items
 

@@ -48,3 +48,17 @@ def test_first_save_immediately_populates_sidebar(tmp_path, monkeypatch):
     assert picker.value == saved[0]
     assert any(b.label == 'Reload saved model' for b in app.sidebar.button)
     assert any('Saved' in s.value for s in app.success)
+
+def test_second_save_selects_newest_run_and_keeps_first(tmp_path, monkeypatch):
+    monkeypatch.setenv('SIGNALREADY_MODEL_DIR', str(tmp_path))
+    app = AppTest.from_file(str(APP)).run(timeout=30)
+    next(b for b in app.button if b.label == 'Check and compare models').click().run(timeout=60)
+    next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
+    first = set(tmp_path.glob('*.joblib'))
+    next(b for b in app.button if b.label == 'Save selected model locally').click().run(timeout=30)
+    assert not app.exception
+    saved = set(tmp_path.glob('*.joblib'))
+    assert first < saved and len(saved) == 2
+    picker = next(s for s in app.sidebar.selectbox if s.label == 'Saved local runs')
+    assert picker.value == (saved - first).pop()
+    assert len(picker.options) == 2

@@ -5,9 +5,10 @@ import os
 import altair as alt
 import pandas as pd
 import streamlit as st
-from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label, load_run, explanation_note, run_metadata
+from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label, load_run, explanation_note, run_metadata, data_issue_examples, class_balance
 
 ROOT = Path(__file__).parent
+ISSUE_EXAMPLE_LIMIT = 20
 MODEL_DIR = Path(os.environ.get('SIGNALREADY_MODEL_DIR', str(ROOT / 'models')))
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
 st.markdown('''<style>.stApp{background:#f6f9fa}h1,h2,h3{color:#153b43}div[data-testid="stMetric"]{background:white;padding:18px;border-radius:10px} .block-container{max-width:1200px;padding-top:2.5rem}</style>''', unsafe_allow_html=True)
@@ -90,6 +91,21 @@ with data_tab:
             c.metric('Repeated examples', report['duplicates'])
             for issue in report['errors']: st.error(issue)
             for issue in report['warnings']: st.warning(issue)
+            examples = data_issue_examples(df, limit=ISSUE_EXAMPLE_LIMIT)
+            if examples:
+                with st.expander('Where to correct the file', expanded=True):
+                    st.dataframe(pd.DataFrame(examples), hide_index=True, use_container_width=True)
+                    st.caption('Data row 1 is the first reading below the header. In a spreadsheet it is usually row 2. Values are not repeated here.')
+                    if len(examples) == ISSUE_EXAMPLE_LIMIT:
+                        st.caption(f'Showing the first {ISSUE_EXAMPLE_LIMIT} problem cells. Correct these and check again to see any others.')
+            balance = class_balance(df)
+            if balance:
+                usable = balance['No failure'] + balance['Failure']
+                share = f" ({balance['Failure'] / usable:.1%} of usable unique examples)" if usable else ''
+                st.write(f"Outcome balance after removing repeats: {balance['Failure']:,} failure examples{share} and {balance['No failure']:,} no-failure examples.")
+                if balance['Unusable labels']:
+                    st.caption(f"{balance['Unusable labels']:,} unique examples have a missing or invalid failure label.")
+                st.caption('Failures are usually rare. That is why the comparison reports missed failures instead of relying on overall accuracy.')
             if report['ignored']:
                 st.caption('Excluded columns: ' + ', '.join(report['ignored']))
             if not report['errors']:
