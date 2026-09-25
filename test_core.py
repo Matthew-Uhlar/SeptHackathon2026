@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
-from core import FEATURES, NUMERIC, TARGET, check_data, read_csv, train, predict, save_run
+from core import FEATURES, NUMERIC, TARGET, check_data, read_csv, train, predict, save_run, explain, text_report
 
 @pytest.fixture(scope='module')
 def sample():
@@ -69,3 +69,37 @@ def test_app_workflow():
     assert 'run' in app.session_state
     next(b for b in app.button if b.label=='Check these readings').click().run()
     assert not app.exception
+
+def test_explain_covers_approved_features(run):
+    result = explain(run)
+    assert result
+    assert all(item['importance'] >= 0 for item in result)
+    names = [item['feature'] for item in result]
+    assert any('Type' in n for n in names)
+    for col in NUMERIC:
+        assert any(col in n for n in names)
+    values = [item['importance'] for item in result]
+    assert values == sorted(values, reverse=True)
+
+def test_explain_uses_training_selection_only(run):
+    # The explanation is derived from the already-fitted model, so it never touches
+    # the held-out final-check rows.
+    result = explain(run)
+    final_indices = set(run['split_indices']['final'])
+    train_indices = set(run['split_indices']['training'])
+    selection_indices = set(run['split_indices']['selection'])
+    assert not final_indices.intersection(train_indices.union(selection_indices))
+    assert result
+
+def test_text_report_contents(run):
+    report = text_report(run)
+    assert run['fingerprint'] in report
+    assert run['winner'] in report
+    assert 'limitations' in report.lower()
+    assert 'training' in report.lower() and 'selection' in report.lower() and 'final check' in report.lower()
+
+def test_bad_sample_fixture_is_flawed():
+    bad = pd.read_csv(Path(__file__).parent/'data/bad_sample.csv')
+    report = check_data(bad)
+    assert report['errors']
+    assert report['duplicates'] >= 1

@@ -4,7 +4,7 @@ import json
 import joblib
 import pandas as pd
 import streamlit as st
-from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report
+from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report
 
 ROOT = Path(__file__).parent
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
@@ -15,13 +15,14 @@ st.write('Check your equipment data. Compare models. Understand the mistakes.')
 st.info('Prototype using generated equipment data. Predictions identify failure patterns in readings. They do not predict when a real machine will break down.')
 with st.sidebar:
     st.header('Your workspace')
-    source = st.radio('Data source', ['Included sample', 'Upload a CSV'])
+    source = st.radio('Data source', ['Included sample', 'Upload a CSV', 'Try a flawed sample'])
     upload = st.file_uploader('Equipment readings', type=['csv']) if source == 'Upload a CSV' else None
     st.caption('Your data stays in this local app. Training requires the AI4I column format.')
     st.link_button('About the sample data', 'https://doi.org/10.24432/C5HS5C')
     st.caption('AI4I 2020 dataset · UCI Machine Learning Repository · CC BY 4.0')
     saved = sorted((ROOT / 'models').glob('*.joblib')) if (ROOT / 'models').exists() else []
     if saved:
+        st.caption('PROTOTYPE — generated data, not a live equipment connection.')
         choice = st.selectbox('Saved local runs', saved, format_func=lambda x: x.stem)
         if st.button('Reload saved model'):
             try:
@@ -38,6 +39,13 @@ if source == 'Included sample':
         raw = sample.read_bytes()
     else:
         st.error('Sample data is missing. Run the included fetch_data.py script once or upload a matching CSV.')
+elif source == 'Try a flawed sample':
+    flawed = ROOT / 'data/bad_sample.csv'
+    if flawed.exists():
+        raw = flawed.read_bytes()
+        st.caption('This built-in file intentionally has a missing reading and a repeated example so you can see the data-readiness checks catch them.')
+    else:
+        st.error('The flawed sample data is missing from the data folder.')
 elif upload:
     raw = upload.getvalue()
 fingerprint = hashlib.sha256(raw or b'').hexdigest()
@@ -46,7 +54,7 @@ if fingerprint != st.session_state.get('input_hash'):
         st.session_state.pop('run', None)
     st.session_state.input_hash = fingerprint
 
-data_tab, results_tab, prediction_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction'])
+data_tab, results_tab, prediction_tab, explain_tab = st.tabs(['1  Data readiness', '2  Model comparison', '3  Try a prediction', '4  What drove the model'])
 with data_tab:
     st.header('Is the data ready?')
     if raw:
@@ -84,6 +92,7 @@ with results_tab:
     st.header('What did the models miss?')
     if run:
         st.subheader('Selected model: ' + run['winner'])
+        st.caption('PROTOTYPE — generated data, not a live equipment connection.')
         if st.session_state.get('loaded'):
             st.info('Showing a saved run. These results describe its original dataset rather than the currently selected file.')
         st.caption('Selection uses F1 on the separate selection group. F1 balances failures found with correct warnings. The final check does not choose the winner. The decision threshold stays at 0.5.')
@@ -103,6 +112,7 @@ with results_tab:
             saved_path = save_run(run, ROOT / 'models')
             st.success('Saved. Use the sidebar to reload this run after restarting.')
         st.download_button('Download results report', json.dumps(public_report(run),indent=2), 'signalready-results.json','application/json')
+        st.download_button('Download results report (readable)', text_report(run), 'signalready-results.txt','text/plain')
     else: st.write('Run the data check and model comparison first.')
 
 with prediction_tab:
@@ -123,4 +133,18 @@ with prediction_tab:
             if outcome: st.warning('The model flags a failure pattern in these readings.')
             else: st.success('The model does not flag a failure pattern in these readings.')
             st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
+            st.caption('PROTOTYPE — generated data, not a live equipment connection.')
     else: st.write('Train or reload a saved model to try a prediction.')
+
+with explain_tab:
+    st.header('What drove the model\'s decisions?')
+    if run:
+        st.caption('This shows model behavior on the training and selection data only, never the final-check group. It does not show a physical cause of failure or a repair recommendation.')
+        rows = explain(run)
+        top = pd.DataFrame(rows[:10]).set_index('feature')
+        st.bar_chart(top['importance'])
+        with st.expander('View all approved-feature contributions'):
+            st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+        st.caption('Higher bars mean the model relied on that reading more when separating its training examples. This describes the model, not the machine.')
+    else:
+        st.write('Run the data check and model comparison first.')

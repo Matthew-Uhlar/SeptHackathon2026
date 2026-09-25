@@ -115,6 +115,69 @@ def save_run(run, folder):
 def public_report(run):
     return {k: v for k, v in run.items() if k not in ['model', 'split_indices']}
 
+def explain(run):
+    """Feature importance for the selected model, computed only from training data
+    that was already inside the fitted pipeline (never the final-check group).
+
+    This describes model behavior on the training and selection data. It does not
+    show a physical cause of failure and it is not a repair recommendation.
+    """
+    model = run['model']
+    preprocessing = model.named_steps['prepare']
+    names = preprocessing.get_feature_names_out()
+    estimator = model.named_steps['model']
+    if hasattr(estimator, 'feature_importances_'):
+        values = estimator.feature_importances_
+    elif hasattr(estimator, 'coef_'):
+        values = np.abs(estimator.coef_[0])
+    else:
+        raise ValueError('This model type does not support an explanation view.')
+    order = np.argsort(values)[::-1]
+    return [{'feature': str(names[i]), 'importance': float(values[i])} for i in order]
+
+def text_report(run):
+    """Plain-text results report covering the fingerprint, model choice, split sizes,
+    the full metrics table and a short limitations paragraph. Kept independent of
+    Streamlit so it can be tested directly."""
+    winner = run['winner']
+    selection_f1 = run['validation'][winner]['F1']
+    lines = []
+    lines.append('SignalReady results report')
+    lines.append('===========================')
+    lines.append('')
+    lines.append(f'Dataset fingerprint: {run["fingerprint"]}')
+    lines.append(f'Selected model: {winner}')
+    lines.append(f'Selection reason: highest F1 on the separate selection group ({selection_f1:.3f}).')
+    lines.append('The final check group played no part in choosing the winner.')
+    lines.append('')
+    lines.append('Row counts:')
+    lines.append(f'  Training: {run["counts"]["training"]}')
+    lines.append(f'  Selection: {run["counts"]["selection"]}')
+    lines.append(f'  Final check: {run["counts"]["final check"]}')
+    lines.append('')
+    lines.append('Final check metrics:')
+    header = f'{"Model":<22}{"Found":>8}{"Missed":>8}{"False alarms":>14}{"Detection rate":>16}{"Precision":>11}'
+    lines.append(header)
+    lines.append('-' * len(header))
+    for name, stats in run['test'].items():
+        lines.append(
+            f'{name:<22}{stats["Failures found"]:>8}{stats["Failures missed"]:>8}'
+            f'{stats["False alarms"]:>14}{stats["Failure detection rate"]:>15.1%}'
+            f'{stats["Warnings that were correct"]:>11.1%}'
+        )
+    lines.append('')
+    lines.append('Limitations:')
+    lines.append(
+        'This is a generated-data classification demonstration rather than a live '
+        'predictive maintenance system. The dataset is synthetic and does not prove '
+        'factory performance. Random row splits evaluate this dataset and do not '
+        'validate future-time forecasting or unseen equipment. The app does not '
+        'estimate warning lead time or provide calibrated failure probabilities and '
+        'it does not connect to live machines. Results describe model behavior on '
+        'held-out rows rather than a guarantee about real equipment.'
+    )
+    return '\n'.join(lines)
+
 def predict(run, row):
     values = pd.DataFrame([row], columns=FEATURES)
     if values.isna().any().any() or row['Type'] not in ['L', 'M', 'H']:
