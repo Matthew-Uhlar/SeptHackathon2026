@@ -39,6 +39,12 @@ def test_shape_and_all_pass_on_fresh_run(fresh_results):
         assert r['Passed'] is True, r
         assert isinstance(r['Detail'], str) and r['Detail'] and ', and' not in r['Detail']
     assert 'all 2000 final-check readings' in by_name(fresh_results)['Reloading preserves predictions']['Detail']
+    same = by_name(fresh_results)['Both models use the same final examples']['Detail']
+    assert 'consistent with one shared final group' in same and 'stored final group also holds 2000 rows' in same
+    separate = by_name(fresh_results)['Final check kept separate']['Detail']
+    assert 'data preparation saw only the 6000 training rows' in separate
+    bad = by_name(fresh_results)['Known bad inputs receive clear warnings']['Detail']
+    assert 'built-in flawed sample' in bad and 'blocking' in bad and 'repeated example' in bad
 
 
 def test_fingerprint_matches_core(df, run):
@@ -148,3 +154,48 @@ def test_broken_run_reports_failure_instead_of_crashing(df, run):
     results = by_name(completion_checks(df, bad, repeat=False))
     assert results['Both models use the same final examples']['Passed'] is False
     assert 'could not complete' in results['Both models use the same final examples']['Detail']
+
+
+def test_same_final_examples_checks_stored_final_group(df, run):
+    bad = copy.deepcopy(run)
+    bad['split_indices']['final'] = bad['split_indices']['final'][:-1]
+    result = cc.check_same_final_examples(bad)
+    assert result['Passed'] is False and 'stored final group holds 1999 rows' in result['Detail']
+    legacy = copy.deepcopy(run)
+    del legacy['split_indices']
+    result = cc.check_same_final_examples(legacy)
+    assert result['Passed'] is True and 'stored final group' not in result['Detail']
+    assert 'consistent with one shared final group' in result['Detail']
+
+
+def test_preparation_fitted_on_more_than_training_rows_fails(df, run):
+    bad = copy.deepcopy(run)
+    clean = clean_frame(df)
+    rows = run['split_indices']['training'] + run['split_indices']['selection']
+    bad['model'] = clone(run['model']).fit(clean.loc[rows, core.FEATURES], clean.loc[rows, core.TARGET])
+    results = by_name(completion_checks(df, bad, repeat=False))
+    assert len(results) == 6
+    separate = results['Final check kept separate']
+    assert separate['Passed'] is False
+    assert 'saw 8000 rows instead of the 6000 training rows' in separate['Detail']
+
+
+def test_bad_sample_without_duplicates_fails(monkeypatch, tmp_path):
+    raw = (ROOT / 'data/bad_sample.csv').read_bytes()
+    frame = core.read_csv(raw)
+    report = core.check_data(frame)
+    assert report['errors'] and report['duplicates'] > 0
+    deduplicated = frame.drop_duplicates(subset=core.FEATURES + [core.TARGET], keep='first')
+    path = tmp_path / 'no_repeats.csv'
+    path.write_text(deduplicated.to_csv(index=False), encoding='utf-8')
+    assert core.check_data(core.read_csv(path.read_bytes()))['duplicates'] == 0
+    monkeypatch.setattr(cc, 'BAD_SAMPLE', path)
+    result = cc.check_bad_inputs()
+    assert result['Passed'] is False and 'repeated example' in result['Detail']
+
+
+def test_bad_sample_unreadable_fails(monkeypatch, tmp_path):
+    broken = tmp_path / 'broken.csv'
+    broken.write_bytes(b'')
+    monkeypatch.setattr(cc, 'BAD_SAMPLE', broken)
+    assert cc.check_bad_inputs()['Passed'] is False

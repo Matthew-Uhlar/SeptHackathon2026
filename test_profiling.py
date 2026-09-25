@@ -91,7 +91,9 @@ def test_ai4i_failure_mode_columns_flagged(sample):
     assert 'RNF' not in flagged  # random failures mostly carry a no-failure label in this file
     for item in flagged.values():
         assert 'already excluded from training' in item['Evidence']
-        assert 'records the answer rather than a reading taken beforehand' in item['Evidence']
+        assert ('may record the answer or be filled in after the outcome rather than a reading taken beforehand'
+                in item['Evidence'])
+        assert 'proof of a cause' in item['Evidence']
         assert 'cause' not in item['Evidence'].replace('proof of a cause', '')
         _no_comma_and(item['Evidence'])
     strengths = [item['Strength'] for item in answer_giveaway_columns(sample)]
@@ -190,3 +192,52 @@ def test_saved_run_table_rejects_incompatible_run(tmp_path, trained_run):
     core.save_run(dict(trained_run, features=['Torque [Nm]']), tmp_path)
     table = saved_run_table(tmp_path)
     assert list(table['Data source']) == ['Could not be loaded']
+
+
+def _failure_type(df):
+    """Kaggle-style text column built from the AI4I failure-mode columns (first mode wins)."""
+    return np.select([df['TWF'] == 1, df['HDF'] == 1, df['PWF'] == 1, df['OSF'] == 1, df['RNF'] == 1],
+                     ['Tool Wear Failure', 'Heat Dissipation Failure', 'Power Failure', 'Overstrain Failure',
+                      'Random Failures'], 'No Failure')
+
+
+def test_noisy_failure_type_text_column_flagged_without_values(sample):
+    df = sample.copy()
+    df['Failure type'] = _failure_type(df)
+    # A few more noisy rows: failure types written on readings labeled as no failure.
+    quiet = df.index[(df['Failure type'] == 'No Failure') & (df[core.TARGET] == 0)][:3]
+    df.loc[quiet, 'Failure type'] = 'Power Failure'
+    crosstab = pd.crosstab(df['Failure type'], df[core.TARGET])
+    assert crosstab.loc['No Failure', 1] > 0 and crosstab.loc['Random Failures', 0] > 0  # strict path cannot apply
+    rng = np.random.default_rng(1)
+    df['Random category'] = rng.choice(['north', 'south', 'east', 'west'], size=len(df))
+    flagged = _flagged(df)
+    item = flagged['Failure type']
+    failure_rows = df['Failure type'].isin(['Tool Wear Failure', 'Heat Dissipation Failure', 'Power Failure',
+                                            'Overstrain Failure'])
+    expected = df.loc[failure_rows, core.TARGET].mean()
+    assert item['Strength'] == round(expected, 4) and 0.95 <= item['Strength'] < 1.0
+    assert f'{int(failure_rows.sum()):,} labeled rows' in item['Evidence']
+    assert 'already excluded from training' in item['Evidence'] and 'proof of a cause' in item['Evidence']
+    for value in ['Failure', 'Tool', 'Heat', 'Power', 'Overstrain', 'Random', 'No ']:
+        assert value not in item['Evidence'].replace('Failure type', '')
+    _no_comma_and(item['Evidence'])
+    assert 'Product ID' not in flagged and 'UDI' not in flagged and 'Random category' not in flagged
+
+
+def test_tolerant_text_path_needs_support_and_minority(sample):
+    df = sample.copy()
+    labels = df[core.TARGET].to_numpy()
+    first_failures = np.flatnonzero(labels == 1)
+    few = np.array(['normal'] * len(df), dtype=object)
+    few[first_failures[:4]] = 'rare stop'  # only 4 rows: below the support minimum
+    df['Too few'] = few
+    flagged = _flagged(df)
+    assert 'Too few' not in flagged
+    # Failure-looking value filling more than half of the labeled rows: left to the strict path which fails on noise.
+    target = np.array([1] * 70 + [0] * 30)
+    status = np.array(['stop'] * 68 + ['run'] * 32)
+    busy = pd.DataFrame({core.TARGET: target, 'Too common': status})
+    assert answer_giveaway_columns(busy) == []
+    busy['Too common'] = np.array(['stop'] * 45 + ['run'] * 55)  # 45 failure-only rows: under half so flagged
+    assert [item['Column'] for item in answer_giveaway_columns(busy)] == ['Too common']

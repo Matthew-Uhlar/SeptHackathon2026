@@ -200,7 +200,7 @@ def test_batch_matches_per_row_predictions(runs, sample, name):
     rows = _rows(sample)
     results, problems = inference.score_batch(run, rows)
     assert problems == []
-    assert list(results.columns) == ['Data row', 'UDI', 'Product ID'] + core.FEATURES + ['Model flag', 'Model score', 'Outside training range']
+    assert list(results.columns) == ['Data row', 'UDI', 'Product ID'] + core.FEATURES + ['Model flag', 'Model score (uncalibrated)', 'Outside training range']
     assert list(results['Data row']) == list(range(1, len(rows) + 1))
     assert list(results['UDI']) == list(rows['UDI'])
     frames = []
@@ -212,7 +212,7 @@ def test_batch_matches_per_row_predictions(runs, sample, name):
         assert out['Outside training range'] == ', '.join(outside)
         frames.append(pd.DataFrame([row], columns=core.FEATURES))
     single_scores = run['model'].predict_proba(pd.concat(frames, ignore_index=True))[:, 1]
-    assert list(results['Model score']) == [round(float(s), 3) for s in single_scores]
+    assert list(results['Model score (uncalibrated)']) == [round(float(s), 3) for s in single_scores]
     assert (results['Model flag'] == 'Failure pattern').any()
     assert (results['Model flag'] == 'No failure pattern').any()
 
@@ -309,3 +309,18 @@ def test_texts_are_plain_and_honest(run):
     for text in [inference.SCORE_NOTE, inference.WHAT_IF_NOTE]:
         lowered = text.lower()
         assert 'probability' not in lowered and 'time to failure' not in lowered and 'calibrated probab' not in lowered
+
+
+def test_batch_neutralizes_formula_like_ids(run):
+    ids = ['=cmd|x', '+SUM(A1)', '-2+3', '@IMPORT', '\tTAB', '\rCR', 'L47181', 'M-100']
+    frame = pd.DataFrame([{**DEFAULT_ROW, 'UDI': i + 1, 'Product ID': value} for i, value in enumerate(ids)])
+    results, problems = inference.score_batch(run, frame)
+    assert problems == []
+    assert list(results['Product ID']) == ["'=cmd|x", "'+SUM(A1)", "'-2+3", "'@IMPORT", "'\tTAB", "'\rCR", 'L47181', 'M-100']
+    assert list(results['UDI']) == list(range(1, len(ids) + 1))
+    downloaded = results.to_csv(index=False)
+    for line in downloaded.splitlines()[1:]:
+        for cell in line.split(','):
+            assert not cell.strip('"').startswith(('=', '+', '-', '@'))
+    assert inference.safe_text(-5) == -5 and inference.safe_text(None) is None
+    assert inference.SCORE_COLUMN == 'Model score (uncalibrated)'

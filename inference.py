@@ -13,6 +13,8 @@ THRESHOLD = 0.5
 NEAR_MARGIN = 0.1
 ID_COLUMNS = ['UDI', 'Product ID']
 FLAG_LABELS = {1: 'Failure pattern', 0: 'No failure pattern'}
+SCORE_COLUMN = 'Model score (uncalibrated)'
+FORMULA_STARTS = ('=', '+', '-', '@', '\t', '\r')
 
 SCORE_NOTE = ('The model score is an uncalibrated internal score from 0 to 1. Scores above the 0.5 decision threshold '
               'are flagged. Balanced class weighting during training pushes scores upward. The score is not the chance '
@@ -21,6 +23,16 @@ SCORE_NOTE = ('The model score is an uncalibrated internal score from 0 to 1. Sc
 WHAT_IF_NOTE = ('Each row shows how the model score responds when one reading is replaced by its training average '
                 'while the other readings stay the same. This describes model behavior. It is not a physical cause '
                 'or a repair recommendation. Inputs interact so these changes do not add up to the full score.')
+
+
+def safe_text(value):
+    """Stop passed-through ID text from running as a spreadsheet formula when the download is opened.
+
+    Text starting with = + - @ tab or carriage return gets a leading single quote. Other values are unchanged.
+    """
+    if isinstance(value, str) and value.startswith(FORMULA_STARTS):
+        return "'" + value
+    return value
 
 
 def _frame(row):
@@ -141,7 +153,7 @@ def score_batch(run, df, limit=5000):
     valid = problems_by_row.isna()
     problems = [{'Data row': int(i) + 1, 'Problem': problems_by_row[i]} for i in df.index[~valid]]
     ids = [c for c in ID_COLUMNS if c in df]
-    columns = ['Data row'] + ids + core.FEATURES + ['Model flag', 'Model score', 'Outside training range']
+    columns = ['Data row'] + ids + core.FEATURES + ['Model flag', SCORE_COLUMN, 'Outside training range']
     if not valid.any():
         return pd.DataFrame(columns=columns), problems
     inputs = pd.concat([df.loc[valid, ['Type']], numbers.loc[valid]], axis=1)[core.FEATURES]
@@ -155,11 +167,11 @@ def score_batch(run, df, limit=5000):
     outside = [', '.join(name for name in names if name) for names in zip(*outside_parts)]
     results = pd.DataFrame({'Data row': (inputs.index + 1).astype(int)})
     for column in ids:
-        results[column] = df.loc[valid, column].to_numpy()
+        results[column] = [safe_text(value) for value in df.loc[valid, column].to_numpy()]
     for column in core.FEATURES:
         results[column] = inputs[column].to_numpy()
     results['Model flag'] = [FLAG_LABELS[int(f)] for f in flags]
-    results['Model score'] = np.round(scores.astype(float), 3)
+    results[SCORE_COLUMN] = np.round(scores.astype(float), 3)
     results['Outside training range'] = outside
     return results[columns].reset_index(drop=True), problems
 

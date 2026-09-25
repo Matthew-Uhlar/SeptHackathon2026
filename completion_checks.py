@@ -79,8 +79,17 @@ def check_same_final_examples(run, name='Both models use the same final examples
         return _result(name, False, f'Results for {"; ".join(wrong)} do not add up to the {size} final-check readings.')
     if len(set(failures.values())) != 1:
         return _result(name, False, 'The models report different numbers of actual failures so they were not checked on the same readings.')
-    return _result(name, True, f'Every row in the final table adds up to the same {size} readings '
-                               f'with the same {next(iter(failures.values()))} actual failures.')
+    indices = run.get('split_indices')
+    stored = ''
+    if indices:
+        final_rows = len(indices['final'])
+        if final_rows != size:
+            return _result(name, False, f'The stored final group holds {final_rows} rows but the results report {size} readings.')
+        stored = f' The stored final group also holds {final_rows} rows.'
+    return _result(name, True, f'Every row in the final table covers the same {size} readings '
+                               f'with the same {next(iter(failures.values()))} actual failures. '
+                               f'This is consistent with one shared final group.{stored} '
+                               'The repeat run check retrains both models and compares their final results.')
 
 
 def check_final_separate(run, name='Final check kept separate'):
@@ -98,8 +107,15 @@ def check_final_separate(run, name='Final check kept separate'):
         return _result(name, False, 'Some rows are listed twice inside one group: ' + '; '.join(repeated) + '.')
     if mismatched:
         return _result(name, False, 'Recorded group sizes do not match the stored rows for: ' + '; '.join(mismatched) + '.')
+    training = run['counts']['training']
+    scaler = run['model'].named_steps['prepare'].named_transformers_['numbers']
+    seen = np.unique(np.asarray(scaler.n_samples_seen_))
+    if len(seen) != 1 or int(seen[0]) != training:
+        shown = ' / '.join(str(int(n)) for n in seen)
+        return _result(name, False, f'The fitted data preparation saw {shown} rows instead of the {training} training rows.')
     return _result(name, True, f'Training / selection / final-check rows do not overlap. Their sizes match the recorded '
-                               f'{run["counts"]["training"]} / {run["counts"]["selection"]} / {run["counts"]["final check"]} rows.')
+                               f'{training} / {run["counts"]["selection"]} / {run["counts"]["final check"]} rows. '
+                               f'The fitted data preparation saw only the {training} training rows.')
 
 
 def check_repeat(df, run, name='Repeat run gives the same results'):
@@ -160,15 +176,21 @@ def check_reload(df, run, name='Reloading preserves predictions'):
 
 def check_bad_inputs(name='Known bad inputs receive clear warnings'):
     if not BAD_SAMPLE.exists():
-        return _result(name, None, 'Not checked: the flawed sample file is missing from the data folder.')
+        return _result(name, None, 'Not checked: the built-in flawed sample file is missing from the data folder.')
     try:
-        errors = core.check_data(core.read_csv(BAD_SAMPLE.read_bytes()))['errors']
+        report = core.check_data(core.read_csv(BAD_SAMPLE.read_bytes()))
     except ValueError as exc:
-        return _result(name, True, 'The flawed sample was rejected while reading: ' + str(exc))
+        return _result(name, False, 'The built-in flawed sample could not be read so its expected warnings were not checked. '
+                                    + str(exc))
+    errors, duplicates = report['errors'], int(report.get('duplicates') or 0)
     if not errors:
-        return _result(name, False, 'The flawed sample passed the data checks without a blocking issue.')
-    return _result(name, True, f'The flawed sample produced {len(errors)} blocking {"issue" if len(errors) == 1 else "issues"}. '
-                               f'First: {errors[0]}')
+        return _result(name, False, 'The built-in flawed sample passed the data checks without a blocking issue.')
+    if duplicates <= 0:
+        return _result(name, False, 'The built-in flawed sample did not produce the expected warning about its repeated example.')
+    return _result(name, True, f'The built-in flawed sample produced {len(errors)} blocking '
+                               f'{"issue" if len(errors) == 1 else "issues"} and a warning about '
+                               f'{duplicates} repeated {"example" if duplicates == 1 else "examples"}. '
+                               f'First blocking issue: {errors[0]}')
 
 
 def completion_checks(df, run, *, repeat=True):

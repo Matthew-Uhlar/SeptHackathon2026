@@ -43,11 +43,11 @@ Found means correctly flagged failures. Missed means failures without a warning.
 | Check | Result | Detail |
 |---|---|---|
 | Answer columns never enter training | Passed | The recorded inputs and the fitted model both use only the six approved equipment inputs. Record IDs / failure-type columns / the failure label are not model inputs. |
-| Both models use the same final examples | Passed | Every row in the final table adds up to the same 2000 readings with the same 68 actual failures. |
-| Final check kept separate | Passed | Training / selection / final-check rows do not overlap. Their sizes match the recorded 6000 / 2000 / 2000 rows. |
+| Both models use the same final examples | Passed | Every row in the final table covers the same 2000 readings with the same 68 actual failures. This is consistent with one shared final group. The stored final group also holds 2000 rows. The repeat run check retrains both models and compares their final results. |
+| Final check kept separate | Passed | Training / selection / final-check rows do not overlap. Their sizes match the recorded 6000 / 2000 / 2000 rows. The fitted data preparation saw only the 6000 training rows. |
 | Repeat run gives the same results | Passed | A fresh training run on the same data picked Random forest again with identical selection results and final-check results. |
 | Reloading preserves predictions | Passed | After saving to a temporary folder and reloading the model gave identical predictions on all 2000 final-check readings. They reproduce the recorded final-check results. |
-| Known bad inputs receive clear warnings | Passed | The flawed sample produced 2 blocking issues. First: Some required readings or failure labels are empty. Correct them before training. |
+| Known bad inputs receive clear warnings | Passed | The built-in flawed sample produced 2 blocking issues and a warning about 1 repeated example. First blocking issue: Some required readings or failure labels are empty. Correct them before training. |
 
 ## Limitations
 
