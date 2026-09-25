@@ -5,11 +5,34 @@ import os
 import altair as alt
 import pandas as pd
 import streamlit as st
-from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, predict, save_run, public_report, explain, text_report, run_label, load_run, explanation_note, run_metadata, data_issue_examples, class_balance
+from core import NUMERIC, FEATURES, TARGET, read_csv, check_data, train, save_run, public_report, explain, text_report, run_label, load_run, explanation_note, run_metadata, data_issue_examples, class_balance
+from profiling import profile_columns, answer_giveaway_columns, saved_run_table
+from narrative import results_summary
+from completion_checks import completion_checks
+from inference import model_score, score_band, what_if, score_batch, batch_summary, SCORE_NOTE, WHAT_IF_NOTE
 
 ROOT = Path(__file__).parent
 ISSUE_EXAMPLE_LIMIT = 20
 MODEL_DIR = Path(os.environ.get('SIGNALREADY_MODEL_DIR', str(ROOT / 'models')))
+CHECK_LABELS = {True: 'Passed', False: 'Failed', None: 'Not checked'}
+
+
+@st.cache_data(show_spinner=False)
+def saved_runs_overview(folder, files):
+    # files carries names and modification times so the cache refreshes after each save.
+    return saved_run_table(folder)
+
+
+def run_identity(run):
+    return run['fingerprint'], run_metadata(run).get('trained_at_utc'), run['winner']
+
+
+def run_checks(frame, active):
+    # Runs as a button callback so the expander can stay open on the rerun that shows the results.
+    st.session_state.checks = (run_identity(active), completion_checks(frame, active, repeat=True))
+    st.session_state.checks_open = True
+
+
 st.set_page_config(page_title='SignalReady', page_icon='⚙️', layout='wide')
 st.markdown('''<style>.stApp{background:#f6f9fa}h1,h2,h3{color:#153b43}div[data-testid="stMetric"]{background:white;padding:18px;border-radius:10px} .block-container{max-width:1200px;padding-top:2.5rem}</style>''', unsafe_allow_html=True)
 st.caption('MAINTENANCE DATA ASSISTANT')
@@ -79,6 +102,7 @@ TAB_LABELS = ['1  Data readiness', '2  Model comparison', '3  Try a prediction',
 # A tab can only be switched before the tabs render so actions request it for the next run.
 if st.session_state.get('switch_tab') in TAB_LABELS:
     st.session_state.active_tab = st.session_state.pop('switch_tab')
+df = None
 data_tab, results_tab, prediction_tab, explain_tab = st.tabs(TAB_LABELS, key='active_tab', on_change='rerun')
 with data_tab:
     st.header('Is the data ready?')
@@ -96,6 +120,8 @@ with data_tab:
             c.metric('Repeated examples', report['duplicates'])
             for issue in report['errors']: st.error(issue)
             for issue in report['warnings']: st.warning(issue)
+            for item in answer_giveaway_columns(df):
+                st.warning('Possible answer giveaway: ' + item['Evidence'])
             examples = data_issue_examples(df, limit=ISSUE_EXAMPLE_LIMIT)
             if examples:
                 with st.expander('Where to correct the file', expanded=True):
@@ -113,6 +139,9 @@ with data_tab:
                 st.caption('Failures are usually rare. That is why the comparison reports missed failures instead of relying on overall accuracy.')
             if report['ignored']:
                 st.caption('Excluded columns: ' + ', '.join(report['ignored']))
+            with st.expander('Column profile'):
+                st.dataframe(profile_columns(df), hide_index=True, use_container_width=True)
+                st.caption('Counts and number ranges for every column. Text values are not repeated here. Only rows marked Input or Target are used for training.')
             if not report['errors']:
                 st.success('Ready for the demo workflow. Only the six approved equipment inputs will enter training.')
             with st.expander('View readings and required columns'):
@@ -152,6 +181,14 @@ with results_tab:
         st.dataframe(table, use_container_width=True)
         st.write('A missed failure is an actual failure the model did not flag. A false alarm is a warning on a reading labeled as no failure.')
         st.caption('The always-no-failure row shows why a high overall accuracy can be misleading when failures are rare.')
+        st.subheader('What these results mean')
+        st.markdown('\n'.join('- ' + sentence for sentence in results_summary(run)))
+        with st.expander('Completion checks', key='checks_open', on_change='rerun'):
+            st.write('These checks confirm the promises this workflow makes for the active run. The repeat check retrains on the selected file when it matches the run.')
+            st.button('Run completion checks', on_click=run_checks, args=(df, run))
+            stored = st.session_state.get('checks')
+            if stored and stored[0] == run_identity(run):
+                st.dataframe(pd.DataFrame([{**c, 'Passed': CHECK_LABELS[c['Passed']]} for c in stored[1]]), hide_index=True, use_container_width=True)
         with st.expander('How this run was checked'):
             st.write('Data source: ' + run.get('source_label', 'Unknown (legacy run)'))
             metadata = run_metadata(run)
@@ -170,6 +207,11 @@ with results_tab:
         st.download_button('Download results report', json.dumps(public_report(run),indent=2), 'signalready-results.json','application/json')
         st.download_button('Download results report (readable)', text_report(run), 'signalready-results.txt','text/plain')
     else: st.write('Run the data check and model comparison first.')
+    saved_files = sorted(MODEL_DIR.glob('*.joblib')) if MODEL_DIR.exists() else []
+    if saved_files:
+        with st.expander('Compare saved runs'):
+            st.dataframe(saved_runs_overview(str(MODEL_DIR), tuple((p.name, p.stat().st_mtime) for p in saved_files)), hide_index=True, use_container_width=True)
+            st.caption('Each saved run was checked on its own dataset. Scores from different datasets are not directly comparable.')
 
 with prediction_tab:
     st.header('Try a set of readings')
@@ -186,13 +228,44 @@ with prediction_tab:
             submitted=st.form_submit_button('Check these readings')
         if submitted:
             try:
-                outcome,outside=predict(run,row)
+                result=model_score(run,row)
+                outcome,outside=result['flag'],result['outside']
                 if outside:
                     st.warning('Outside the training range: '+', '.join(outside)+'. This model may be unreliable for these readings.')
                 if outcome: st.warning('The model flags a failure pattern in these readings.')
                 else: st.info('The model does not flag a failure pattern in these readings.')
                 st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
                 st.caption('PROTOTYPE — no live equipment connection.')
+                st.metric('Model score (uncalibrated)', f"{result['score']:.3f}", help=SCORE_NOTE)
+                st.write(score_band(result['score'], result['flag']) + '.')
+                st.caption(SCORE_NOTE)
+                st.subheader('How the score responds to each reading')
+                changes = pd.DataFrame(what_if(run,row))
+                if changes['Score change'].abs().max() < 0.001:
+                    st.write('Replacing any single reading with its training average barely moves this score.')
+                else:
+                    st.dataframe(changes, hide_index=True, use_container_width=True, column_config={'Score change': st.column_config.NumberColumn(format='%+.3f')})
+                    st.caption('A positive score change means the current value raises the score compared with the training average.')
+                st.caption(WHAT_IF_NOTE)
+            except ValueError as exc:
+                st.error(str(exc))
+        st.subheader('Score a file of readings')
+        st.caption('Upload a CSV with the six approved input columns. A failure label column is optional and ignored. Rows that fail the checks are skipped and listed.')
+        batch_file = st.file_uploader('Readings to score', type=['csv'], key='batch_upload')
+        if batch_file:
+            try:
+                results, problems = score_batch(run, read_csv(batch_file.getvalue()))
+                summary = batch_summary(results)
+                a, b, c = st.columns(3)
+                a.metric('Rows scored', f"{summary['Rows scored']:,}")
+                b.metric('Flagged', f"{summary['Flagged']:,}")
+                c.metric('Outside training range', f"{summary['Outside training range']:,}")
+                st.dataframe(results, hide_index=True, use_container_width=True)
+                if problems:
+                    with st.expander(f'{len(problems):,} rows were skipped'):
+                        st.dataframe(pd.DataFrame(problems), hide_index=True, use_container_width=True)
+                st.caption('The Model flag column is the classification. ' + SCORE_NOTE)
+                st.download_button('Download scored readings', results.to_csv(index=False), 'signalready-scores.csv', 'text/csv')
             except ValueError as exc:
                 st.error(str(exc))
     else: st.write('Train or reload a saved model to try a prediction.')
