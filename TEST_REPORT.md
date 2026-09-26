@@ -1,5 +1,12 @@
 # SignalReady test report (testing team)
 
+## September 26 2026 verification
+
+Full Windows suite: 266 passed / 1 skipped in 76.94 seconds with zero failures or errors. The skipped test is the opt-in real browser test. New regression coverage checks session clearing / retained unsaved work / batch audit completeness and provenance / spreadsheet identifier escaping / wide CSV rejection / explicit local security settings. Earlier results below are historical.
+
+Live browser checks verified training / retained runs after changing source / save behavior and readable saved-run labels. After a connection reset the browser tool rejected reconnection. A complete final visual walkthrough is still required. The demo video predates the new controls.
+
+
 Prepared September 25 2026. The testing team exercised the integrated app like a demanding user and a QA engineer. It then added `test_acceptance.py`. No other repository file was changed. Nothing was committed and nothing was written into ./models.
 
 ## Environment

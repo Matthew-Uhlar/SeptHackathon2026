@@ -1,5 +1,10 @@
 # SignalReady submission checklist
 
+## September 26 2026 verification update
+
+Windows automated verification is complete: 266 passed / 1 skipped. All six completion checks pass. The installed dependency scan reports no known vulnerabilities in 48 packages. This supersedes earlier test counts below. The current demo video needs re-recording for the new session controls and audit download. A complete final visual walkthrough and fresh-machine installation remain open. Review SECURITY_REVIEW.md before using confidential data.
+
+
 Deadline: **Sunday September 27 2026 at 4:59 PM Central (America/Chicago)** which is 21:59 UTC. The portal header says Sep 27 while the timeline graphic says Sep 28. Plan for Sep 27. Submissions can be updated until the deadline. Late or incomplete submissions are not considered.
 
 Status key: **Done** = in the repository and checked / **Needs owner** = only Matt can do it. The feature modules were wired into app.py in commit 6d7058b. The testing team's bugs B1 to B8 were fixed in 85255c2. Features are now frozen.

@@ -14,10 +14,10 @@ NEAR_MARGIN = 0.1
 ID_COLUMNS = ['UDI', 'Product ID']
 FLAG_LABELS = {1: 'Failure pattern', 0: 'No failure pattern'}
 SCORE_COLUMN = 'Model score (uncalibrated)'
-FORMULA_STARTS = ('=', '+', '-', '@', '\t', '\r')
+FORMULA_STARTS = ('=', '+', '-', '@', '\t', '\r', '\n')
 
 SCORE_NOTE = ('The model score is an uncalibrated internal score from 0 to 1. Scores above the 0.5 decision threshold '
-              'are flagged. Balanced class weighting during training pushes scores upward. The score is not the chance '
+              'are flagged. Balanced class weighting changes fitted scores so they are not calibrated failure probabilities. The score is not the chance '
               'that this equipment will fail.')
 
 WHAT_IF_NOTE = ('Each row shows how the model score responds when one reading is replaced by its training average '
@@ -28,9 +28,9 @@ WHAT_IF_NOTE = ('Each row shows how the model score responds when one reading is
 def safe_text(value):
     """Stop passed-through ID text from running as a spreadsheet formula when the download is opened.
 
-    Text starting with = + - @ tab or carriage return gets a leading single quote. Other values are unchanged.
+    Formula prefixes (including after whitespace) and leading tab or line breaks get a single quote.
     """
-    if isinstance(value, str) and value.startswith(FORMULA_STARTS):
+    if isinstance(value, str) and (value.startswith(FORMULA_STARTS) or value.lstrip().startswith(('=', '+', '-', '@'))):
         return "'" + value
     return value
 

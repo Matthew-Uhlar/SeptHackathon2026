@@ -425,7 +425,11 @@ def test_batch_scoring_new_readings_matches_download(reloaded):
     assert len(scored) == metrics['Rows scored'] == len(expected) == 29
     assert (scored['Model flag'] == 'Failure pattern').sum() == metrics['Flagged']
     assert scored['Outside training range'].notna().sum() == metrics['Outside training range']
-    assert list(scored.columns) == list(expected.columns)
+    assert list(scored.columns[:len(expected.columns)]) == list(expected.columns)
+    assert scored['Training dataset fingerprint'].eq(reloaded.original['fingerprint']).all()
+    audit = pd.read_csv(io.StringIO(downloaded(app, 'Download batch audit')))
+    assert audit['Data row'].tolist() == list(range(1, 32))
+    assert audit['Status'].value_counts().to_dict() == {'Scored': 29, 'Skipped': 2}
     assert any(e.label == '2 rows were skipped' for e in tab.expander) and [p['Data row'] for p in problems] == [30, 31]
     # DEMO_SCRIPT section 7 reference values.
     assert (metrics['Flagged'], metrics['Outside training range']) == (4, 3)
@@ -496,13 +500,13 @@ def test_ui_text_makes_no_probability_cause_or_forecast_claim(reloaded, demo):
 # Session state edge cases
 # ---------------------------------------------------------------------------------------------
 
-def test_switching_data_source_discards_an_unsaved_run_but_keeps_a_reloaded_one(model_dir, sample_run):
+def test_switching_data_source_keeps_unsaved_and_reloaded_runs(model_dir, sample_run):
     app = click(new_session(), 'Check and compare models', timeout=120)
     assert app.session_state['run']
     choose_source(app, 'Try a flawed sample')
-    # Current behavior (see UX list in TEST_REPORT.md): an unsaved run is dropped without a warning.
-    assert 'run' not in app.session_state or app.session_state['run'] is None
-    assert not app.tabs[1].metric
+    assert app.session_state['run']
+    assert app.tabs[1].metric
+    assert any('active model has been kept' in i.value for i in app.info)
     core.save_run(sample_run, model_dir)
     app = click(new_session(), 'Reload saved model')
     choose_source(app, 'Try a flawed sample')

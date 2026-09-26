@@ -1,5 +1,10 @@
 # SignalReady compliance review
 
+## September 26 2026 checkpoint
+
+Matt authorized bounded improvements after the earlier feature freeze. Current Windows evidence is 266 passed / 1 skipped plus all six completion checks passing. The optional real browser test was skipped. Local privacy controls and data export checks are documented in SECURITY_REVIEW.md. The installed dependency scan reports no known vulnerabilities in 48 packages. Earlier commit-specific counts and freeze statements below are historical. The demo must be refreshed to match the new controls. No hosted security or autonomous maintenance capabilities are claimed.
+
+
 Prepared September 25 2026 by the deliverables and compliance team. It checks the repository against the official rules / Theme 1 / the idea-phase proposal as captured in PROPOSAL_CRITERIA.md. First written against commit 132878c. Updated after the feature modules were wired in (6d7058b) and again after the bug-fix round (85255c2). Evidence now cites files and functions at commit 85255c2 and line numbers refer to app.py at that commit. This is a document review and not legal advice.
 
 Items marked **Owner** need Matt. Items marked **Coordinator** need the person integrating app.py.

@@ -66,7 +66,7 @@ def test_repeatable_training_and_persistence(small, tmp_path):
     restored = joblib.load(saved)
     np.testing.assert_array_equal(first['model'].predict(small[FEATURES]), restored['model'].predict(small[FEATURES]))
 
-def test_unsaved_run_cleared_on_source_change(small, tmp_path, monkeypatch):
+def test_unsaved_run_retained_on_source_change(small, tmp_path, monkeypatch):
     from streamlit.testing.v1 import AppTest
     # The copied app must fall back to its own models folder.
     monkeypatch.delenv('SIGNALREADY_MODEL_DIR', raising=False)
@@ -82,7 +82,8 @@ def test_unsaved_run_cleared_on_source_change(small, tmp_path, monkeypatch):
     assert 'run' in app.session_state
     app.sidebar.radio[0].set_value('Try a flawed sample').run(timeout=30)
     assert not app.exception
-    assert 'run' not in app.session_state
+    assert app.session_state['run']
+    assert any('active model has been kept' in i.value for i in app.info)
     assert not (tmp_path / 'models').exists()
 
 def test_incompatible_saved_object_is_rejected_without_ui_crash(small, tmp_path, monkeypatch):

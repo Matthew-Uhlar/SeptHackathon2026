@@ -1,5 +1,23 @@
 # SignalReady handoff to Codex
 
+## Current checkpoint: September 26 2026
+
+This checkpoint supersedes the historical status and feature freeze below. Matt authorized bounded feature improvements and security checks. Keep the original single-person local prototype scope.
+
+- Repository: C:\Users\Matt\Documents\GitHub\SeptHackathon2026 on master. Baseline 5a20afd. This checkpoint is uncommitted.
+- Windows validation: 266 passed / 1 skipped in 76.94 seconds. The skipped test is the opt-in real browser test. All six completion checks pass.
+- Added retained unsaved runs with source-change notices / readable saved-run labels / batch export provenance / row-by-row batch audit / Clear session data.
+- Hardened spreadsheet ID escaping and CSV width limits. Explicit localhost / CORS / XSRF / no static serving / no telemetry / hidden browser error details settings are tested.
+- Added exports.py and test_security_updates.py. No model algorithms or selection rules changed.
+- Updated project environment pip to 26.2.1. DEPENDENCY_AUDIT.json records 48 packages with no known vulnerabilities and none skipped. See SECURITY_REVIEW.md for scope and limits.
+- Live browser checks verified training / source-switch retention / saving / saved labels before a connection reset. The browser tool then rejected reconnection. Do not interpret the automated suite as a completed current visual walkthrough.
+- The demo video predates these visible changes. Re-record and review it before submission. Fresh-machine installation remains unverified.
+- This is for one trusted local user. There is no app login / multi-user isolation / app encryption or hosted TLS. Joblib files must remain trusted. Clear session data does not delete saved models or downloads and is not forensic erasure.
+- Next: review the uncommitted diff / complete the visual walkthrough and updated demo / perform owner-only submission actions. Do not publish or push without authorization.
+
+## Historical checkpoints
+
+
 Updated September 25 2026 by Claude (cloud session). This supersedes the status sections of CLAUDE_HANDOFF_CURRENT.md. Product rules / model rules / cautions in that file remain in force. Rewritten at each stable milestone because a usage limit can end the session without warning.
 
 ## Current state (commit 3c9ee9b, branch claude/jolly-fermi-9zawua == master)

@@ -1,5 +1,10 @@
 # SignalReady technical documentation
 
+## September 26 2026 update
+
+Windows verification passed 266 tests with one optional browser test skipped. The older commit references below describe the prior baseline. exports.py now builds scored exports and an audit that records the outcome of every submitted batch row with model and dataset identity. app.py retains unsaved runs across source changes with clear notices and provides Clear session data to reset uploads and results. Saved files remain intact. CSV inputs have a 64-column cap and formula-like exported identifiers are escaped. See SECURITY_REVIEW.md for explicit local server protections and deployment limits. Model training and selection behavior are unchanged.
+
+
 Submission item 5 for ABB Accelerator 2026 Theme 1 (Agentic Predictive Maintenance Studio). It covers solution architecture / technologies used / implementation approach / setup instructions. Every statement below was checked against app.py / core.py / profiling.py / narrative.py / completion_checks.py / inference.py at commit 85255c2 on September 25 2026.
 
 ## What the solution does

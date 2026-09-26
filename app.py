@@ -10,6 +10,7 @@ from profiling import profile_columns, answer_giveaway_columns, saved_run_table
 from narrative import results_summary
 from completion_checks import completion_checks
 from inference import model_score, score_band, what_if, score_batch, batch_summary, SCORE_NOTE, WHAT_IF_NOTE
+from exports import batch_export_tables
 
 ROOT = Path(__file__).parent
 ISSUE_EXAMPLE_LIMIT = 20
@@ -43,6 +44,8 @@ def train_model(frame, source_label):
         st.session_state.train_error = 'The comparison could not complete: ' + str(exc)
         return
     st.session_state.loaded = False
+    st.session_state.run_input_hash = st.session_state.get('input_hash')
+    st.session_state.run_saved = False
     st.session_state.pop('reload_error', None)
     st.session_state.pop('train_error', None)
     st.session_state.notice = 'Comparison ready. Showing the Model comparison tab.'
@@ -56,6 +59,7 @@ def save_active(active):
         st.session_state.save_error = 'The run could not be saved. Check that the local model folder is writable and try again.'
         return
     st.session_state.pop('save_error', None)
+    st.session_state.run_saved = True
     st.session_state.notice = 'Saved. This run is now available in the sidebar and will remain available after restarting.'
 
 
@@ -63,6 +67,14 @@ def clear_active():
     st.session_state.pop('run', None)
     st.session_state.pop('reload_error', None)
     st.session_state.loaded = False
+
+
+def clear_session():
+    # New upload widget identities discard uploaded files on the next render.
+    epoch = st.session_state.get('upload_epoch', 0) + 1
+    st.session_state.clear()
+    st.session_state.upload_epoch = epoch
+    st.session_state.notice = 'Session cleared. Uploaded files and active results were removed from this session. Saved model files remain on this computer.'
 
 
 def reload_selected():
@@ -75,6 +87,7 @@ def reload_selected():
         st.session_state.reload_error = f'The selected saved run could not be loaded. {reason}{kept} Choose another saved run or train a new one.'
         return
     st.session_state.loaded = True
+    st.session_state.run_saved = True
     st.session_state.pop('reload_error', None)
     st.session_state.notice = 'Saved run restored. Its results belong to its original data.'
     st.session_state.active_tab = TAB_LABELS[1]
@@ -92,7 +105,7 @@ st.info('The included samples use generated equipment data. Uploaded data has no
 with st.sidebar:
     st.header('Your workspace')
     source = st.radio('Data source', ['Included sample', 'Upload a CSV', 'Try a flawed sample'])
-    upload = st.file_uploader('Equipment readings', type=['csv']) if source == 'Upload a CSV' else None
+    upload = st.file_uploader('Equipment readings', type=['csv'], key=f"training_upload_{st.session_state.get('upload_epoch', 0)}") if source == 'Upload a CSV' else None
     st.caption('Your data stays in this local app. Training requires the AI4I column format.')
     st.link_button('About the sample data', 'https://doi.org/10.24432/C5HS5C')
     st.caption('AI4I 2020 dataset by S. Matzka · UCI Machine Learning Repository · CC BY 4.0')
@@ -106,10 +119,16 @@ with st.sidebar:
             # The chosen file disappeared. Say so instead of silently switching to another run.
             st.session_state.pop('saved_run_choice')
             st.warning('The previously selected saved run is no longer in the model folder. Choose a run from the list.')
-        st.selectbox('Saved local runs', saved, format_func=run_label, key='saved_run_choice')
+        overview = saved_runs_overview(str(MODEL_DIR), tuple((p.name, p.stat().st_mtime) for p in saved))
+        labels = {row['Run']: f"{row['Selected model']} · {row['Trained (UTC)'][5:16] if row['Trained (UTC)'] != 'Unknown (legacy run)' else 'Unknown time'} UTC · {row['Run'].split('|')[0].strip().split('/')[-1].strip()}"
+                  for row in overview.to_dict('records') if pd.notna(row.get('Selected model'))}
+        st.selectbox('Saved local runs', saved, format_func=lambda p, display=labels: display.get(run_label(p), run_label(p)), key='saved_run_choice')
         st.button('Reload saved model', on_click=reload_selected)
     if st.session_state.get('run'):
+        st.caption('Active model saved locally.' if st.session_state.get('run_saved') else 'Active model has not been saved. Save it before closing the app.')
         st.button('Clear active model', on_click=clear_active)
+    st.button('Clear session data', on_click=clear_session,
+              help='Remove uploads and results from this session. This does not delete saved model files or downloaded reports.')
 
 raw = None
 if source == 'Included sample':
@@ -129,9 +148,9 @@ elif upload:
     raw = upload.getvalue()
 fingerprint = hashlib.sha256(raw or b'').hexdigest()
 if fingerprint != st.session_state.get('input_hash'):
-    if not st.session_state.get('loaded'):
-        st.session_state.pop('run', None)
     st.session_state.input_hash = fingerprint
+source_changed = bool(st.session_state.get('run') and not st.session_state.get('loaded')
+                      and st.session_state.get('run_input_hash') != fingerprint)
 
 if st.session_state.get('reload_error'):
     st.error(st.session_state.reload_error)
@@ -140,12 +159,14 @@ if st.session_state.get('notice'):
 active_run = st.session_state.get('run')
 if active_run:
     st.caption('Active model: ' + active_run['winner'] + ' · dataset ' + active_run['fingerprint'][:12])
+    if source_changed:
+        st.info('Your active model has been kept. The selected file changed but results and predictions still use the original training data. Save the model or compare the new file when ready.')
 # A stable key keeps the open tab across reruns. Button callbacks switch tabs by setting this key.
 df = None
 data_tab, results_tab, prediction_tab, explain_tab = st.tabs(TAB_LABELS, key='active_tab', on_change='rerun')
 with data_tab:
     st.header('Is the data ready?')
-    if raw:
+    if raw is not None:
         try:
             df = read_csv(raw)
             report = check_data(df)
@@ -208,6 +229,8 @@ with results_tab:
         st.caption('PROTOTYPE — no live equipment connection.')
         if st.session_state.get('loaded'):
             st.info('Showing a saved run. These results describe its original dataset rather than the currently selected file.')
+        elif source_changed:
+            st.info('Showing the retained model from the previous file. These results belong to its original dataset.')
         st.caption('Selection uses F1 on the separate selection group. F1 balances failures found with correct warnings. The final check does not choose the winner. The decision threshold stays at 0.5.')
         stats = run['test'][run['winner']]
         cols = st.columns(3)
@@ -254,6 +277,8 @@ with prediction_tab:
         st.caption('Using ' + run['winner'] + ' from dataset ' + run['fingerprint'][:12])
         if st.session_state.get('loaded'):
             st.info('This is a saved run. It was trained on its original dataset. It may not match the file selected in Data readiness.')
+        elif source_changed:
+            st.info('Predictions use the retained model from the previous file. Compare the new file to replace it.')
         with st.form('prediction'):
             row={'Type':st.selectbox('Product quality type',['L','M','H'])}
             defaults=[300.,310.,1500.,40.,100.]
@@ -269,7 +294,7 @@ with prediction_tab:
                     st.warning('Outside the training range: '+', '.join(outside)+'. This model may be unreliable for these readings.')
                 if outcome: st.warning('The model flags a failure pattern in these readings.')
                 else: st.info('The model does not flag a failure pattern in these readings.')
-                st.caption('This is a model classification. It does not establish that equipment is safe or identify a repair.')
+                st.write('This is a model classification. It does not establish that equipment is safe or identify a repair.')
                 st.caption('PROTOTYPE — no live equipment connection.')
                 st.metric('Model score (uncalibrated)', f"{result['score']:.3f}", help=SCORE_NOTE)
                 st.write(score_band(result['score'], result['flag']) + '.')
@@ -286,21 +311,29 @@ with prediction_tab:
                 st.error(str(exc))
         st.subheader('Score a file of readings')
         st.caption('Upload a CSV with the six approved input columns. A failure label column is optional and ignored. Rows that fail the checks are skipped and listed.')
-        batch_file = st.file_uploader('Readings to score', type=['csv'], key='batch_upload')
+        batch_file = st.file_uploader('Readings to score', type=['csv'], key=f"batch_upload_{st.session_state.get('upload_epoch', 0)}")
         if batch_file:
             try:
-                results, problems = score_batch(run, read_csv(batch_file.getvalue()))
+                batch_raw = batch_file.getvalue()
+                results, problems = score_batch(run, read_csv(batch_raw))
+                scored_export, audit_export = batch_export_tables(run, results, problems, hashlib.sha256(batch_raw).hexdigest())
+                export_id = run['fingerprint'][:12]
                 summary = batch_summary(results)
                 a, b, c = st.columns(3)
                 a.metric('Rows scored', f"{summary['Rows scored']:,}")
                 b.metric('Flagged', f"{summary['Flagged']:,}")
                 c.metric('Outside training range', f"{summary['Outside training range']:,}")
                 st.dataframe(results, hide_index=True, use_container_width=True)
+                if results.empty:
+                    st.warning('No readings were scored. Correct the skipped rows below and upload the file again.')
                 if problems:
-                    with st.expander(f'{len(problems):,} rows were skipped'):
+                    with st.expander(f'{len(problems):,} rows were skipped', expanded=results.empty):
                         st.dataframe(pd.DataFrame(problems), hide_index=True, use_container_width=True)
                 st.caption('The Model flag column is the classification. ' + SCORE_NOTE)
-                st.download_button('Download scored readings', results.to_csv(index=False), 'signalready-scores.csv', 'text/csv')
+                if not results.empty:
+                    st.download_button('Download scored readings', scored_export.to_csv(index=False), f'signalready-scores-{export_id}.csv', 'text/csv')
+                st.download_button('Download batch audit', audit_export.to_csv(index=False), f'signalready-batch-audit-{export_id}.csv', 'text/csv')
+                st.caption('The batch audit accounts for every input row with a scored or skipped status. Both downloads identify the model and the training and scored files. Rejected values are not copied into the audit.')
             except ValueError as exc:
                 st.error(str(exc))
     else: st.write('Train or reload a saved model to try a prediction.')
@@ -311,6 +344,8 @@ with explain_tab:
         st.caption('These scores come from the fitted model using its training examples. The explanation calculation does not use the selection or final-check groups. It does not show a physical cause of failure or a repair recommendation.')
         if st.session_state.get('loaded'):
             st.info('Showing the saved model. These explanations may not match the file selected in Data readiness.')
+        elif source_changed:
+            st.info('Explanations describe the retained model from the previous file.')
         rows = explain(run)
         labels = pd.DataFrame(rows)
         labels['feature'] = labels['feature'].str.replace('numbers__', '', regex=False).str.replace('type__Type_', 'Product type ', regex=False)

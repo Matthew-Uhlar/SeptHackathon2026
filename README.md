@@ -45,6 +45,7 @@ Windows (run inside this folder):
 
 ```powershell
 python -m venv .venv
+.venv\Scripts\python -m pip install --upgrade "pip>=26.2.1"
 .venv\Scripts\python -m pip install -r requirements.txt
 ```
 
@@ -58,6 +59,7 @@ macOS or Linux:
 
 ```bash
 python3 -m venv .venv
+.venv/bin/python -m pip install --upgrade 'pip>=26.2.1'
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m streamlit run app.py --server.address 127.0.0.1
 ```
@@ -75,6 +77,18 @@ Open http://127.0.0.1:8501 if the browser does not open by itself. If data/ai4i2
 7. Save the selected model locally. Restart the app and reload it from the sidebar. The app opens Model comparison for the reloaded run. Once runs are saved the Compare saved runs expander on Model comparison lists them side by side.
 8. Open Try a prediction to enter readings with the displayed units. The same PROTOTYPE label appears next to the result. The Model score (uncalibrated) is the model's internal score. It is not the chance of failure. The what-if table shows how the score responds when each reading is replaced by its training average.
 9. Under Score a file of readings upload data/new_readings.csv (or any CSV with the six input columns, up to 5000 rows). Invalid rows are skipped and listed. Download the scored readings as a CSV. Its score column is named Model score (uncalibrated).
+
+## Privacy and recent improvements
+
+Changing the selected file keeps the active model and clearly labels its original data. Save it before closing the app. The sidebar shows whether the active model has been saved and uses model names with UTC times to identify saved runs.
+
+Batch downloads include the model name plus training time and fingerprints for both the training data and scored file. Download batch audit accounts for every input row with a scored or skipped status and a reason for each rejection. Rejected cell values are excluded. If no rows can be scored the app shows correction guidance and offers only the audit download.
+
+Clear session data removes uploaded files and active results from the current session. It preserves saved model files and does not erase downloaded reports. The app accepts at most 10 MB and 64 CSV columns. Training and batch row limits still apply.
+
+The app is intended for one trusted user on a local computer. Local-only listening plus cross-origin and cross-site request protections are enabled. Usage telemetry and arbitrary static-file serving are disabled. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for evidence and limits plus the dependency audit. Saved models and downloads are not encrypted by the app. Keep them in a protected account and never load model files from other people.
+
+The existing demo video predates these usability and privacy changes. Re-record it before claiming it demonstrates every current control.
 
 ## Modeling decisions
 

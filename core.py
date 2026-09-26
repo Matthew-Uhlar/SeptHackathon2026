@@ -70,6 +70,8 @@ def read_csv(raw):
         import csv
         reader = csv.reader(io.StringIO(raw.decode('utf-8-sig')), strict=True)
         header = next(reader)
+        if len(header) > 64:
+            raise ValueError('Please use at most 64 columns. Keep the required equipment columns and remove unrelated columns.')
         if len(header) != len(set(header)):
             raise ValueError('Column names repeat. Give each column a unique name.')
         if not header or any(not col.strip() for col in header):
