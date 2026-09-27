@@ -11,6 +11,9 @@ from narrative import results_summary
 from completion_checks import completion_checks
 from inference import model_score, score_band, what_if, score_batch, batch_summary, SCORE_NOTE, WHAT_IF_NOTE
 from exports import batch_export_tables
+from decision_support import maintenance_scenario, SCENARIO_NOTE, MAX_COST
+from familiarity import batch_familiarity, FAMILIARITY_NOTE
+from review_card import model_review_card
 
 ROOT = Path(__file__).parent
 ISSUE_EXAMPLE_LIMIT = 20
@@ -243,6 +246,20 @@ with results_tab:
         st.caption('The always-no-failure row shows why a high overall accuracy can be misleading when failures are rare.')
         st.subheader('What these results mean')
         st.markdown('\n'.join('- ' + sentence for sentence in results_summary(run)))
+        with st.expander('Explore maintenance trade-offs'):
+            st.write('Compare missed failures with false alarms using your own assumed cost units. This uses the separate selection group rather than the final check.')
+            st.caption('Active dataset: ' + run['fingerprint'][:12] + ' | selected model: ' + run['winner'])
+            cost_columns = st.columns(2)
+            missed_cost = cost_columns[0].number_input('Assumed units per missed failure', min_value=0.0, max_value=MAX_COST, value=100.0, step=1.0)
+            alarm_cost = cost_columns[1].number_input('Assumed units per false alarm', min_value=0.0, max_value=MAX_COST, value=1.0, step=1.0)
+            try:
+                scenario = maintenance_scenario(run, missed_cost, alarm_cost)
+                st.caption(f"Based on {scenario['rows_evaluated']:,} selection-group readings. Error cost = missed failures × assumed units + false alarms × assumed units.")
+                st.dataframe(pd.DataFrame(scenario['comparison']), hide_index=True, use_container_width=True)
+                st.caption(SCENARIO_NOTE)
+                st.download_button('Download trade-off scenario', json.dumps(scenario, indent=2), 'signalready-scenario.json', 'application/json')
+            except ValueError as exc:
+                st.error(str(exc))
         with st.expander('Completion checks', key='checks_open', on_change='rerun'):
             st.write('These checks test key promises of this workflow against the active run. The repeat check retrains on the selected file when it matches the run.')
             st.button('Run completion checks', on_click=run_checks, args=(df, run, st.session_state.get('input_hash')))
@@ -264,6 +281,8 @@ with results_tab:
             st.error(st.session_state.pop('save_error'))
         st.download_button('Download results report', json.dumps(public_report(run),indent=2), 'signalready-results.json','application/json')
         st.download_button('Download results report (readable)', text_report(run), 'signalready-results.txt','text/plain')
+        st.download_button('Download model review card', model_review_card(run), 'signalready-model-review.txt', 'text/plain')
+        st.caption('The review card combines this run’s evidence and limits with steps for a human reviewer. It is not deployment approval.')
     else: st.write('Run the data check and model comparison first.')
     saved_files = sorted(MODEL_DIR.glob('*.joblib')) if MODEL_DIR.exists() else []
     if saved_files:
@@ -323,6 +342,15 @@ with prediction_tab:
                 a.metric('Rows scored', f"{summary['Rows scored']:,}")
                 b.metric('Flagged', f"{summary['Flagged']:,}")
                 c.metric('Outside training range', f"{summary['Outside training range']:,}")
+                familiarity = batch_familiarity(run, results, len(problems))
+                familiarity['scored_file_sha256'] = hashlib.sha256(batch_raw).hexdigest()
+                with st.expander('How familiar are these readings?'):
+                    st.write(familiarity['status'])
+                    st.caption(f"{familiarity['rows_scored']:,} scored rows assessed; {familiarity['rows_skipped']:,} skipped rows excluded.")
+                    if familiarity['inputs']:
+                        st.dataframe(pd.DataFrame(familiarity['inputs']), hide_index=True, use_container_width=True)
+                    st.caption(FAMILIARITY_NOTE)
+                    st.download_button('Download range screening', json.dumps(familiarity, indent=2), f"signalready-range-screening-{export_id}-{familiarity['scored_file_sha256'][:12]}.json", 'application/json')
                 st.dataframe(results, hide_index=True, use_container_width=True)
                 if results.empty:
                     st.warning('No readings were scored. Correct the skipped rows below and upload the file again.')

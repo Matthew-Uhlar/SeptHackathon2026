@@ -17,6 +17,13 @@ This checkpoint supersedes the historical status and feature freeze below. Matt 
 
 ## Historical checkpoints
 
+## September 27 2026 competitive enhancements
+
+- Staging from d379847 adds a selection-group maintenance trade-off explorer / incoming-batch numeric range screening / downloadable model review card.
+- Full staged suite: 302 passed / 1 skipped. The optional browser test remains skipped. The new range screening records the training fingerprint / training time / scored-file fingerprint and counts scored and skipped rows.
+- Research and trade-off rationale are in CLAUDE_HANDOFF_HACKATHON_ENHANCEMENTS.md in the workspace. Live browser reconnect was previously blocked by browser-tool policy.
+- These files are ready to copy into the real repository after final hash verification: app.py / decision_support.py / familiarity.py / review_card.py / test_decision_support.py / test_enhancement_acceptance.py / QUALITY_REVIEW_ENHANCEMENTS.md plus updated handoff and docs.
+
 
 Updated September 25 2026 by Claude (cloud session). This supersedes the status sections of CLAUDE_HANDOFF_CURRENT.md. Product rules / model rules / cautions in that file remain in force. Rewritten at each stable milestone because a usage limit can end the session without warning.
 

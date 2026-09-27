@@ -4,6 +4,10 @@
 
 Windows verification passed 266 tests with one optional browser test skipped. The older commit references below describe the prior baseline. exports.py now builds scored exports and an audit that records the outcome of every submitted batch row with model and dataset identity. app.py retains unsaved runs across source changes with clear notices and provides Clear session data to reset uploads and results. Saved files remain intact. CSV inputs have a 64-column cap and formula-like exported identifiers are escaped. See SECURITY_REVIEW.md for explicit local server protections and deployment limits. Model training and selection behavior are unchanged.
 
+## September 27 2026 enhancement update
+
+The app adds a selection-group hypothetical error-cost explorer / incoming batch numeric range screening / a downloadable model review card. The explorer uses illustrative user assumptions and does not tune the model or claim savings. Range screening uses valid scored rows and records skipped rows plus training and incoming-file fingerprints. It is a descriptive familiarity check rather than statistical drift detection. The review card lists evidence and human review actions without claiming deployment approval. The complete staged suite for this update passed 302 tests with one optional browser test skipped.
+
 
 Submission item 5 for ABB Accelerator 2026 Theme 1 (Agentic Predictive Maintenance Studio). It covers solution architecture / technologies used / implementation approach / setup instructions. Every statement below was checked against app.py / core.py / profiling.py / narrative.py / completion_checks.py / inference.py at commit 85255c2 on September 25 2026.
 

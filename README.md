@@ -22,6 +22,8 @@ A local guided modeling studio for equipment failure data. Prototype for the ABB
 
 ## Challenge alignment
 
+The current prototype also includes a hypothetical maintenance trade-off view based on the separate selection group. It lets a reviewer explore assumed costs for missed failures and false alarms without changing the selected model or its threshold. Batch scoring includes a descriptive numeric range screening report with training and incoming-file fingerprints. A downloadable model review card carries the evidence limits and human review steps. These additions do not claim factory savings / statistical drift detection / deployment approval.
+
 SignalReady implements a guided modeling studio for Theme 1. A person starts each step and reviews the results. Model selection follows a fixed rule. The current prototype does not implement an autonomous agent or an AI chat copilot. The idea-phase proposal kept the user in control and ruled out a separate chatbot. Its contribution is a small auditable workflow from data readiness through model comparison to scoring new readings. Broader agent behavior remains future work.
 
 How the Theme 1 items are covered today (the full table with gaps is in PROPOSAL_CRITERIA.md and COMPLIANCE_REVIEW.md):
